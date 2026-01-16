@@ -1,3 +1,7 @@
+Problem Statement: Develop an AI-Based Software Model for Early Detection of Learning Disabilities
+
+our solution
+
 # ADHARA — Build Context
 
 > This document defines the scope and constraints for all development work on ADHARA.  
@@ -14,6 +18,128 @@
 | Goal | Demonstration, not production |
 | Event | AI Samasya – ICGAIFE 3.0 |
 | Organizer | Government of Kerala, IHRD |
+
+---
+
+## Problem Statement
+
+**The Challenge:**
+In Kerala, classrooms average 35+ students. Teachers cannot observe every child's struggle in real-time, especially during digital learning. When learning moved online, we gained convenience but lost visibility.
+
+**The Cost of Inaction:**
+- Students who struggle silently go unnoticed
+- Problems surface only after grades drop
+- Late intervention = harder to help
+
+**Our Response:**
+ADHARA bridges this gap by surfacing behavioral patterns that indicate a child may need support — before their grades reveal the problem.
+
+---
+
+## Target User
+
+| User | Role in ADHARA | Priority |
+|------|----------------|----------|
+| **Teacher** | Primary user — views dashboard, reviews flagged students | 🔴 Primary |
+| School Counselor | Reviews students with persistent friction | 🟡 Secondary |
+| Parent | Receives summary reports (future) | 🟢 Future |
+
+> **For this demo:** We focus on the **Teacher** as the primary user.
+
+---
+
+## User Journey
+
+```
+Step 1: Student uses a learning activity (quiz, reading task)
+            ↓
+Step 2: ADHARA silently logs interaction patterns
+        (time taken, retries, pauses, corrections)
+            ↓
+Step 3: Rule-based engine calculates friction indicators
+            ↓
+Step 4: Teacher dashboard shows:
+        "Learner 01: High Reading Friction — Review Suggested"
+            ↓
+Step 5: Teacher decides next steps (human judgment)
+```
+
+---
+
+## Sample Scenario
+
+> **Meet Arjun**
+>
+> Arjun is a 4th grader. His grades are average — nothing alarming.
+>
+> But ADHARA notices something: Arjun takes 3x longer on reading tasks. He re-reads sentences repeatedly. He often pauses mid-paragraph.
+>
+> ADHARA flags: *"Reading Friction — High. Human review suggested."*
+>
+> The teacher talks to Arjun. Discovers he's been squinting at the screen. A simple eye checkup reveals he needs glasses.
+>
+> **Early detection. Simple solution. No diagnosis needed.**
+
+---
+
+## Problem Statement
+
+**The Challenge:**
+In Kerala, classrooms average 35+ students. Teachers cannot observe every child's struggle in real-time, especially during digital learning. When learning moved online, we gained convenience but lost visibility.
+
+**The Cost of Inaction:**
+- Students who struggle silently go unnoticed
+- Problems surface only after grades drop
+- Late intervention = harder to help
+
+**Our Response:**
+ADHARA bridges this gap by surfacing behavioral patterns that indicate a child may need support — before their grades reveal the problem.
+
+---
+
+## Target User
+
+| User | Role in ADHARA | Priority |
+|------|----------------|----------|
+| **Teacher** | Primary user — views dashboard, reviews flagged students | 🔴 Primary |
+| School Counselor | Reviews students with persistent friction | 🟡 Secondary |
+| Parent | Receives summary reports (future) | 🟢 Future |
+
+> **For this demo:** We focus on the **Teacher** as the primary user.
+
+---
+
+## User Journey
+
+```
+Step 1: Student uses a learning activity (quiz, reading task)
+            ↓
+Step 2: ADHARA silently logs interaction patterns
+        (time taken, retries, pauses, corrections)
+            ↓
+Step 3: Rule-based engine calculates friction indicators
+            ↓
+Step 4: Teacher dashboard shows:
+        "Learner 01: High Reading Friction — Review Suggested"
+            ↓
+Step 5: Teacher decides next steps (human judgment)
+```
+
+---
+
+## Sample Scenario
+
+> **Meet Arjun**
+>
+> Arjun is a 4th grader. His grades are average — nothing alarming.
+>
+> But ADHARA notices something: Arjun takes 3x longer on reading tasks. He re-reads sentences repeatedly. He often pauses mid-paragraph.
+>
+> ADHARA flags: *"Reading Friction — High. Human review suggested."*
+>
+> The teacher talks to Arjun. Discovers he's been squinting at the screen. A simple eye checkup reveals he needs glasses.
+>
+> **Early detection. Simple solution. No diagnosis needed.**
 
 ---
 
