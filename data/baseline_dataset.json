@@ -1,0 +1,411 @@
+{
+    "version": "1.0.0",
+    "name": "ADHARA Baseline Dataset",
+    "description": "Synthetic baseline reference for learning friction detection",
+    "disclaimer": "This is synthetic demonstration data only. Not validated for any assessment purpose. All patterns are simulated.",
+    "last_updated": "2026-01-16",
+    "age_groups": {
+        "6-8": {
+            "label": "Early Elementary",
+            "mouse": {
+                "avgHesitationMs": 2500,
+                "avgJitterScore": 0.4,
+                "avgCorrections": 3,
+                "avgIdleMotionMs": 4000,
+                "avgSpeedVariance": 0.5,
+                "avgSpeed": 150,
+                "avgTremorIndex": 0.35,
+                "avgMicroPauses": 8
+            },
+            "attention": {
+                "avgBlinkRate": 18,
+                "avgGazeStability": 0.6,
+                "avgFocusDuration": 45,
+                "expectedEmotions": [
+                    "neutral",
+                    "happy",
+                    "surprised"
+                ]
+            },
+            "task_performance": {
+                "avgTaskDurationSec": 180,
+                "avgRetries": 2,
+                "avgIdlePeriods": 4
+            }
+        },
+        "9-11": {
+            "label": "Upper Elementary",
+            "mouse": {
+                "avgHesitationMs": 1800,
+                "avgJitterScore": 0.3,
+                "avgCorrections": 2,
+                "avgIdleMotionMs": 3000,
+                "avgSpeedVariance": 0.4,
+                "avgSpeed": 200,
+                "avgTremorIndex": 0.25,
+                "avgMicroPauses": 5
+            },
+            "attention": {
+                "avgBlinkRate": 16,
+                "avgGazeStability": 0.7,
+                "avgFocusDuration": 60,
+                "expectedEmotions": [
+                    "neutral",
+                    "happy"
+                ]
+            },
+            "task_performance": {
+                "avgTaskDurationSec": 150,
+                "avgRetries": 1.5,
+                "avgIdlePeriods": 3
+            }
+        },
+        "12-14": {
+            "label": "Middle School",
+            "mouse": {
+                "avgHesitationMs": 1200,
+                "avgJitterScore": 0.2,
+                "avgCorrections": 1.5,
+                "avgIdleMotionMs": 2000,
+                "avgSpeedVariance": 0.3,
+                "avgSpeed": 250,
+                "avgTremorIndex": 0.15,
+                "avgMicroPauses": 3
+            },
+            "attention": {
+                "avgBlinkRate": 15,
+                "avgGazeStability": 0.75,
+                "avgFocusDuration": 90,
+                "expectedEmotions": [
+                    "neutral"
+                ]
+            },
+            "task_performance": {
+                "avgTaskDurationSec": 120,
+                "avgRetries": 1,
+                "avgIdlePeriods": 2
+            }
+        },
+        "15+": {
+            "label": "High School and Above",
+            "mouse": {
+                "avgHesitationMs": 800,
+                "avgJitterScore": 0.15,
+                "avgCorrections": 1,
+                "avgIdleMotionMs": 1500,
+                "avgSpeedVariance": 0.25,
+                "avgSpeed": 300,
+                "avgTremorIndex": 0.1,
+                "avgMicroPauses": 2
+            },
+            "attention": {
+                "avgBlinkRate": 14,
+                "avgGazeStability": 0.8,
+                "avgFocusDuration": 120,
+                "expectedEmotions": [
+                    "neutral"
+                ]
+            },
+            "task_performance": {
+                "avgTaskDurationSec": 90,
+                "avgRetries": 0.5,
+                "avgIdlePeriods": 1
+            }
+        }
+    },
+    "friction_profiles": {
+        "low": {
+            "label": "Low Friction",
+            "description": "Interaction patterns within expected range for age group",
+            "deviation_threshold": 0.3,
+            "indicators": {
+                "hesitationDeviation": {
+                    "max": 0.3
+                },
+                "jitterDeviation": {
+                    "max": 0.3
+                },
+                "correctionDeviation": {
+                    "max": 0.3
+                },
+                "speedVarianceDeviation": {
+                    "max": 0.3
+                }
+            },
+            "interpretation": "Learner demonstrates consistent engagement with minimal hesitation patterns.",
+            "recommendation": "Continue current learning path. No immediate intervention needed."
+        },
+        "medium": {
+            "label": "Medium Friction",
+            "description": "Some interaction patterns deviate from expected range",
+            "deviation_threshold": 0.7,
+            "indicators": {
+                "hesitationDeviation": {
+                    "min": 0.3,
+                    "max": 0.7
+                },
+                "jitterDeviation": {
+                    "min": 0.3,
+                    "max": 0.7
+                },
+                "correctionDeviation": {
+                    "min": 0.3,
+                    "max": 0.7
+                },
+                "speedVarianceDeviation": {
+                    "min": 0.3,
+                    "max": 0.7
+                }
+            },
+            "interpretation": "Learner shows some hesitation patterns that may indicate areas needing support.",
+            "recommendation": "Human review suggested to identify specific support areas."
+        },
+        "high": {
+            "label": "High Friction",
+            "description": "Significant deviation from expected interaction patterns",
+            "deviation_threshold": 1.0,
+            "indicators": {
+                "hesitationDeviation": {
+                    "min": 0.7
+                },
+                "jitterDeviation": {
+                    "min": 0.7
+                },
+                "correctionDeviation": {
+                    "min": 0.7
+                },
+                "speedVarianceDeviation": {
+                    "min": 0.7
+                }
+            },
+            "interpretation": "Learner exhibits significant friction indicators across multiple categories.",
+            "recommendation": "Human review strongly recommended. Consider personalized support strategies."
+        }
+    },
+    "friction_categories": {
+        "reading": {
+            "name": "Reading Friction",
+            "description": "Indicators related to text comprehension tasks",
+            "key_metrics": [
+                "hesitationTime",
+                "correctionCount",
+                "taskDuration"
+            ],
+            "weight": 0.35
+        },
+        "attention": {
+            "name": "Attention Friction",
+            "description": "Indicators related to focus and engagement",
+            "key_metrics": [
+                "idleMotionTime",
+                "gazeStability",
+                "blinkRate"
+            ],
+            "weight": 0.35
+        },
+        "memory": {
+            "name": "Memory/Consistency Friction",
+            "description": "Indicators related to recall and response consistency",
+            "key_metrics": [
+                "retryCount",
+                "speedVariance",
+                "correctionCount"
+            ],
+            "weight": 0.30
+        }
+    },
+    "reference_scenarios": [
+        {
+            "id": "reading_low_6-8",
+            "task_type": "reading_comprehension",
+            "age_group": "6-8",
+            "friction_level": "low",
+            "duration_sec": 160,
+            "metrics": {
+                "hesitationMs": 2300,
+                "jitterScore": 0.38,
+                "corrections": 2,
+                "idleMotionMs": 3500,
+                "speedVariance": 0.45
+            },
+            "description": "Young learner completing reading task with expected interaction patterns"
+        },
+        {
+            "id": "reading_medium_6-8",
+            "task_type": "reading_comprehension",
+            "age_group": "6-8",
+            "friction_level": "medium",
+            "duration_sec": 240,
+            "metrics": {
+                "hesitationMs": 3800,
+                "jitterScore": 0.55,
+                "corrections": 5,
+                "idleMotionMs": 6000,
+                "speedVariance": 0.65
+            },
+            "description": "Young learner showing elevated hesitation and correction patterns"
+        },
+        {
+            "id": "reading_high_6-8",
+            "task_type": "reading_comprehension",
+            "age_group": "6-8",
+            "friction_level": "high",
+            "duration_sec": 320,
+            "metrics": {
+                "hesitationMs": 5500,
+                "jitterScore": 0.75,
+                "corrections": 8,
+                "idleMotionMs": 9000,
+                "speedVariance": 0.85
+            },
+            "description": "Young learner with significant friction indicators during reading task"
+        },
+        {
+            "id": "reading_low_9-11",
+            "task_type": "reading_comprehension",
+            "age_group": "9-11",
+            "friction_level": "low",
+            "duration_sec": 130,
+            "metrics": {
+                "hesitationMs": 1700,
+                "jitterScore": 0.28,
+                "corrections": 1,
+                "idleMotionMs": 2800,
+                "speedVariance": 0.35
+            },
+            "description": "Upper elementary learner with smooth reading task completion"
+        },
+        {
+            "id": "reading_medium_9-11",
+            "task_type": "reading_comprehension",
+            "age_group": "9-11",
+            "friction_level": "medium",
+            "duration_sec": 200,
+            "metrics": {
+                "hesitationMs": 2700,
+                "jitterScore": 0.45,
+                "corrections": 4,
+                "idleMotionMs": 4500,
+                "speedVariance": 0.55
+            },
+            "description": "Upper elementary learner with some hesitation on reading task"
+        },
+        {
+            "id": "reading_high_9-11",
+            "task_type": "reading_comprehension",
+            "age_group": "9-11",
+            "friction_level": "high",
+            "duration_sec": 280,
+            "metrics": {
+                "hesitationMs": 4000,
+                "jitterScore": 0.65,
+                "corrections": 7,
+                "idleMotionMs": 7000,
+                "speedVariance": 0.75
+            },
+            "description": "Upper elementary learner with high friction during reading task"
+        },
+        {
+            "id": "math_low_9-11",
+            "task_type": "math_problem",
+            "age_group": "9-11",
+            "friction_level": "low",
+            "duration_sec": 90,
+            "metrics": {
+                "hesitationMs": 1500,
+                "jitterScore": 0.25,
+                "corrections": 1,
+                "idleMotionMs": 2000,
+                "speedVariance": 0.30
+            },
+            "description": "Smooth math problem solving with confident interactions"
+        },
+        {
+            "id": "math_medium_9-11",
+            "task_type": "math_problem",
+            "age_group": "9-11",
+            "friction_level": "medium",
+            "duration_sec": 150,
+            "metrics": {
+                "hesitationMs": 2500,
+                "jitterScore": 0.42,
+                "corrections": 3,
+                "idleMotionMs": 4000,
+                "speedVariance": 0.50
+            },
+            "description": "Some uncertainty during math problem with moderate corrections"
+        },
+        {
+            "id": "attention_low_12-14",
+            "task_type": "attention_task",
+            "age_group": "12-14",
+            "friction_level": "low",
+            "duration_sec": 100,
+            "metrics": {
+                "hesitationMs": 1100,
+                "jitterScore": 0.18,
+                "corrections": 1,
+                "idleMotionMs": 1800,
+                "speedVariance": 0.28,
+                "gazeStability": 0.78
+            },
+            "description": "Sustained focus with consistent gaze patterns"
+        },
+        {
+            "id": "attention_medium_12-14",
+            "task_type": "attention_task",
+            "age_group": "12-14",
+            "friction_level": "medium",
+            "duration_sec": 140,
+            "metrics": {
+                "hesitationMs": 1800,
+                "jitterScore": 0.32,
+                "corrections": 3,
+                "idleMotionMs": 3200,
+                "speedVariance": 0.45,
+                "gazeStability": 0.55
+            },
+            "description": "Some attention drift with periodic re-focusing"
+        },
+        {
+            "id": "reading_low_15+",
+            "task_type": "reading_comprehension",
+            "age_group": "15+",
+            "friction_level": "low",
+            "duration_sec": 80,
+            "metrics": {
+                "hesitationMs": 750,
+                "jitterScore": 0.12,
+                "corrections": 0,
+                "idleMotionMs": 1200,
+                "speedVariance": 0.20
+            },
+            "description": "Mature learner with efficient task completion"
+        },
+        {
+            "id": "reading_high_15+",
+            "task_type": "reading_comprehension",
+            "age_group": "15+",
+            "friction_level": "high",
+            "duration_sec": 180,
+            "metrics": {
+                "hesitationMs": 2000,
+                "jitterScore": 0.40,
+                "corrections": 4,
+                "idleMotionMs": 4000,
+                "speedVariance": 0.55
+            },
+            "description": "Older learner showing unexpected friction patterns"
+        }
+    ],
+    "output_format": {
+        "friction_level": "Low | Medium | High",
+        "explanation": "Plain English summary of observed patterns compared to baseline",
+        "category_breakdown": {
+            "reading": "percentage",
+            "attention": "percentage",
+            "memory": "percentage"
+        },
+        "recommendation": "Human review suggested"
+    }
+}
