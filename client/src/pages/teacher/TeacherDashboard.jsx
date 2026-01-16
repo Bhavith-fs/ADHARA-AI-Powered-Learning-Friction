@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
 import './TeacherDashboard.css'
 
 /**
@@ -335,7 +336,9 @@ Remember: Use cautious language like "may indicate" or "appears to show". Always
                             </div>
                             <div className="ai-content">
                                 {aiAnalysis ? (
-                                    <pre className="ai-output">{aiAnalysis}</pre>
+                                    <div className="ai-output">
+                                        <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                                    </div>
                                 ) : (
                                     <p className="ai-placeholder">
                                         {ollamaConnected
