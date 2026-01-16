@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHARA — Face & Eye Mood Analyzer v2</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            color: #f1f5f9;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #f472b6, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 16px;
+        }
+
+        .card {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Video */
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #videoElement {
+            width: 100%;
+            display: block;
+        }
+
+        #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hud-badge {
+            background: rgba(0, 0, 0, 0.75);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .hud-badge.success {
+            color: #10b981;
+        }
+
+        .hud-badge.warning {
+            color: #f59e0b;
+        }
+
+        .hud-badge.error {
+            color: #ef4444;
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-banner.surprise {
+            display: block;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(139, 92, 246, 0.9));
+        }
+
+        .alert-banner.fear {
+            display: block;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.9), rgba(234, 88, 12, 0.9));
+        }
+
+        .alert-banner.distress {
+            display: block;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 0.85rem;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Emotion Display */
+        .emotion-main {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .emotion-main.happy {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.05));
+            border-left: 4px solid #fbbf24;
+        }
+
+        .emotion-main.sad {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(59, 130, 246, 0.05));
+            border-left: 4px solid #60a5fa;
+        }
+
+        .emotion-main.angry {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.05));
+            border-left: 4px solid #ef4444;
+        }
+
+        .emotion-main.surprised {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.05));
+            border-left: 4px solid #a855f7;
+        }
+
+        .emotion-main.fearful {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.05));
+            border-left: 4px solid #f97316;
+        }
+
+        .emotion-main.disgusted {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.05));
+            border-left: 4px solid #22c55e;
+        }
+
+        .emotion-main.neutral {
+            background: linear-gradient(135deg, rgba(148, 163, 184, 0.15), rgba(100, 116, 139, 0.05));
+            border-left: 4px solid #94a3b8;
+        }
+
+        .emotion-emoji {
+            font-size: 2.5rem;
+        }
+
+        .emotion-info {
+            flex: 1;
+        }
+
+        .emotion-label {
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+
+        .emotion-conf {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        /* Eye Tracking */
+        .eye-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .eye-metric {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .eye-metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #06b6d4;
+        }
+
+        .eye-metric-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .eye-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 12px;
+            background: rgba(30, 41, 59, 0.4);
+            border-radius: 8px;
+        }
+
+        .eye-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #64748b;
+        }
+
+        .eye-dot.open {
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .eye-dot.closed {
+            background: #ef4444;
+        }
+
+        /* Emotion Bars */
+        .emotion-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .emotion-bar-label {
+            width: 70px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .emotion-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .emotion-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.2s;
+        }
+
+        .emotion-bar-value {
+            width: 35px;
+            text-align: right;
+            font-size: 0.7rem;
+            font-family: monospace;
+        }
+
+        /* AI Panel */
+        .ai-panel {
+            border: 2px solid #8b5cf6;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.05));
+        }
+
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #64748b;
+        }
+
+        .status-dot.active {
+            background: #10b981;
+        }
+
+        .status-dot.loading {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+
+        .status-dot.error {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .ai-summary {
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 90px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #e2e8f0;
+        }
+
+        /* Alerts Log */
+        .alerts-log {
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+        }
+
+        .alert-item.surprise {
+            border-left: 3px solid #a855f7;
+        }
+
+        .alert-item.fear {
+            border-left: 3px solid #f97316;
+        }
+
+        .alert-time {
+            color: #64748b;
+            margin-left: auto;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(139, 92, 246, 0.3);
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 12px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .disclaimer {
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: #fbbf24;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>👁️ ADHARA Face & Eye Mood Analyzer v2</h1>
+            <p class="subtitle">Real-time expression & eye tracking with AI-powered emotional state analysis</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left: Video -->
+            <div>
+                <div class="card">
+                    <div class="card-title">📹 Live Analysis</div>
+                    <div class="video-container" id="videoContainer">
+                        <video id="videoElement" autoplay muted playsinline></video>
+                        <canvas id="overlayCanvas"></canvas>
+
+                        <div class="video-hud">
+                            <div class="hud-badge" id="faceStatus">No face</div>
+                            <div class="hud-badge success" id="fpsDisplay">0 FPS</div>
+                        </div>
+
+                        <div class="alert-banner" id="alertBanner">
+                            <span id="alertText">⚡ Sudden emotion change detected!</span>
+                        </div>
+
+                        <div class="loading-overlay" id="loadingOverlay">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text" id="loadingText">Loading AI models...</div>
+                        </div>
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-start" id="startBtn" disabled>▶ Start Analysis</button>
+                        <button class="btn btn-stop" id="stopBtn" disabled>⏹ Stop</button>
+                    </div>
+                </div>
+
+                <div class="disclaimer">
+                    ⚠️ <strong>Demo Only:</strong> Expression detection is approximate and varies per individual.
+                    Not for diagnostic or assessment purposes.
+                </div>
+            </div>
+
+            <!-- Right: Analysis -->
+            <div>
+                <!-- Current Emotion -->
+                <div class="card">
+                    <div class="card-title">🎭 Current Expression</div>
+                    <div class="emotion-main neutral" id="emotionMain">
+                        <div class="emotion-emoji" id="emotionEmoji">😐</div>
+                        <div class="emotion-info">
+                            <div class="emotion-label" id="emotionLabel">Neutral</div>
+                            <div class="emotion-conf" id="emotionConf">Confidence: 0%</div>
+                        </div>
+                    </div>
+
+                    <div id="emotionBars"></div>
+                </div>
+
+                <!-- Eye Tracking -->
+                <div class="card" style="margin-top: 12px;">
+                    <div class="card-title">👁️ Eye Tracking</div>
+                    <div class="eye-panel">
+                        <div class="eye-metric">
+                            <div class="eye-metric-value" id="blinkRate">0</div>
+                            <div class="eye-metric-label">Blinks/min</div>
+                        </div>
+                        <div class="eye-metric">
+                            <div class="eye-metric-value" id="gazeStability">--</div>
+                            <div class="eye-metric-label">Gaze Stability</div>
+                        </div>
+                    </div>
+                    <div class="eye-indicator">
+                        <div>Left Eye <span class="eye-dot" id="leftEye"></span></div>
+                        <div>Right Eye <span class="eye-dot" id="rightEye"></span></div>
+                    </div>
+                </div>
+
+                <!-- AI Analysis -->
+                <div class="card ai-panel" style="margin-top: 12px;">
+                    <div class="ai-header">
+                        <div class="card-title" style="margin: 0;">🤖 AI Mood Analysis</div>
+                        <div class="ai-status">
+                            <span class="status-dot" id="aiDot"></span>
+                            <span id="aiStatus">Connecting...</span>
+                        </div>
+                    </div>
+                    <div class="ai-summary" id="aiSummary">
+                        Start the camera to receive AI-powered mood analysis...
+                    </div>
+                </div>
+
+                <!-- Sudden Change Alerts -->
+                <div class="card" style="margin-top: 12px;">
+                    <div class="card-title">⚡ Sudden Change Alerts</div>
+                    <div class="alerts-log" id="alertsLog">
+                        <div style="color: #64748b; font-size: 0.8rem; text-align: center; padding: 16px;">
+                            No sudden changes detected
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // ADVANCED FACE & EYE MOOD ANALYZER v2
+        // ============================================
+
+        const OLLAMA_URL = 'http://localhost:11434';
+        const MODEL = 'qwen2.5-coder:7b-instruct-q4_K_M';
+        const AI_INTERVAL = 2500; // 2.5 seconds
+
+        const EMOTIONS = {
+            happy: { emoji: '😊', color: '#fbbf24' },
+            sad: { emoji: '😢', color: '#60a5fa' },
+            angry: { emoji: '😠', color: '#ef4444' },
+            surprised: { emoji: '😲', color: '#a855f7' },
+            fearful: { emoji: '😨', color: '#f97316' },
+            disgusted: { emoji: '🤢', color: '#22c55e' },
+            neutral: { emoji: '😐', color: '#94a3b8' }
+        };
+
+        let video, canvas, ctx;
+        let isAnalyzing = false;
+        let isAiConnected = false;
+        let lastAiCall = 0;
+        let frameCount = 0;
+        let lastFpsTime = Date.now();
+
+        // Emotion history for trend detection
+        let emotionHistory = [];
+        let lastDominant = 'neutral';
+        let lastDominantTime = Date.now();
+
+        // Eye tracking
+        let blinkCount = 0;
+        let blinkStartTime = Date.now();
+        let lastEyeState = { left: true, right: true };
+        let gazePoints = [];
+
+        // Alerts
+        let alerts = [];
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        async function init() {
+            video = document.getElementById('videoElement');
+            canvas = document.getElementById('overlayCanvas');
+            ctx = canvas.getContext('2d');
+
+            try {
+                updateLoading('Loading face detector...');
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+
+                updateLoading('Loading expression model...');
+                await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+
+                updateLoading('Loading landmark model...');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/');
+
+                document.getElementById('loadingOverlay').style.display = 'none';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('faceStatus').textContent = 'Click Start';
+
+            } catch (err) {
+                console.error('Model load error:', err);
+                updateLoading('Failed to load models');
+            }
+
+            testOllama();
+        }
+
+        function updateLoading(text) {
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        async function testOllama() {
+            try {
+                const res = await fetch(`${OLLAMA_URL}/api/tags`);
+                if (res.ok) {
+                    isAiConnected = true;
+                    document.getElementById('aiDot').className = 'status-dot active';
+                    document.getElementById('aiStatus').textContent = 'Connected';
+                }
+            } catch (e) {
+                document.getElementById('aiDot').className = 'status-dot error';
+                document.getElementById('aiStatus').textContent = 'Not connected';
+            }
+        }
+
+        // ============================================
+        // CAMERA CONTROL
+        // ============================================
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480, facingMode: 'user' }
+                });
+
+                video.srcObject = stream;
+                await video.play();
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('faceStatus').textContent = 'Detecting...';
+
+                isAnalyzing = true;
+                blinkStartTime = Date.now();
+                blinkCount = 0;
+
+                detectLoop();
+
+            } catch (err) {
+                console.error('Camera error:', err);
+                document.getElementById('faceStatus').textContent = 'Camera denied';
+                document.getElementById('faceStatus').className = 'hud-badge error';
+            }
+        }
+
+        function stopCamera() {
+            isAnalyzing = false;
+
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(t => t.stop());
+                video.srcObject = null;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('faceStatus').textContent = 'Stopped';
+        }
+
+        // ============================================
+        // DETECTION LOOP
+        // ============================================
+
+        async function detectLoop() {
+            if (!isAnalyzing) return;
+
+            frameCount++;
+            const now = Date.now();
+
+            // FPS
+            if (now - lastFpsTime > 1000) {
+                document.getElementById('fpsDisplay').textContent = `${frameCount} FPS`;
+                frameCount = 0;
+                lastFpsTime = now;
+            }
+
+            try {
+                // Detect single face with highest confidence
+                const detections = await faceapi
+                    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+                    .withFaceLandmarks()
+                    .withFaceExpressions();
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (detections.length > 0) {
+                    // Get the largest/closest face
+                    const detection = detections.reduce((a, b) =>
+                        a.detection.box.area > b.detection.box.area ? a : b
+                    );
+
+                    document.getElementById('faceStatus').textContent = '✓ Face detected';
+                    document.getElementById('faceStatus').className = 'hud-badge success';
+
+                    drawFaceOverlay(detection);
+                    processExpressions(detection.expressions);
+                    processEyeTracking(detection.landmarks);
+
+                    // AI analysis
+                    if (isAiConnected && now - lastAiCall > AI_INTERVAL) {
+                        lastAiCall = now;
+                        analyzeWithAI(detection.expressions);
+                    }
+
+                } else {
+                    document.getElementById('faceStatus').textContent = 'No face';
+                    document.getElementById('faceStatus').className = 'hud-badge warning';
+                }
+
+            } catch (err) {
+                console.error('Detection error:', err);
+            }
+
+            requestAnimationFrame(detectLoop);
+        }
+
+        // ============================================
+        // FACE OVERLAY
+        // ============================================
+
+        function drawFaceOverlay(detection) {
+            const box = detection.detection.box;
+            const landmarks = detection.landmarks;
+
+            // Draw face box
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+            // Draw landmarks
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.6)';
+            landmarks.positions.forEach(pt => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Eye regions
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 1.5;
+
+            [leftEye, rightEye].forEach(eye => {
+                ctx.beginPath();
+                ctx.moveTo(eye[0].x, eye[0].y);
+                eye.forEach(pt => ctx.lineTo(pt.x, pt.y));
+                ctx.closePath();
+                ctx.stroke();
+            });
+        }
+
+        // ============================================
+        // EXPRESSION PROCESSING
+        // ============================================
+
+        function processExpressions(expressions) {
+            const sorted = Object.entries(expressions).sort((a, b) => b[1] - a[1]);
+            const [dominant, confidence] = sorted[0];
+
+            // Update main display
+            const main = document.getElementById('emotionMain');
+            main.className = `emotion-main ${dominant}`;
+            document.getElementById('emotionEmoji').textContent = EMOTIONS[dominant].emoji;
+            document.getElementById('emotionLabel').textContent = dominant;
+            document.getElementById('emotionConf').textContent = `Confidence: ${(confidence * 100).toFixed(0)}%`;
+
+            // Update bars
+            document.getElementById('emotionBars').innerHTML = sorted.map(([emo, conf]) => `
+                <div class="emotion-bar-item">
+                    <div class="emotion-bar-label">${EMOTIONS[emo].emoji} ${emo}</div>
+                    <div class="emotion-bar">
+                        <div class="emotion-bar-fill" style="width: ${conf * 100}%; background: ${EMOTIONS[emo].color}"></div>
+                    </div>
+                    <div class="emotion-bar-value" style="color: ${EMOTIONS[emo].color}">${(conf * 100).toFixed(0)}%</div>
+                </div>
+            `).join('');
+
+            // Detect sudden changes
+            detectSuddenChange(dominant, confidence);
+
+            // Update history
+            emotionHistory.push({ emotion: dominant, confidence, time: Date.now() });
+            if (emotionHistory.length > 100) emotionHistory.shift();
+
+            lastDominant = dominant;
+        }
+
+        // ============================================
+        // SUDDEN CHANGE DETECTION
+        // ============================================
+
+        function detectSuddenChange(current, confidence) {
+            const now = Date.now();
+            const banner = document.getElementById('alertBanner');
+            const alertText = document.getElementById('alertText');
+
+            // Check for sudden surprise or fear (high confidence)
+            const isSudden = (current !== lastDominant) &&
+                (current === 'surprised' || current === 'fearful') &&
+                confidence > 0.5 &&
+                (now - lastDominantTime > 500); // Debounce
+
+            if (isSudden) {
+                lastDominantTime = now;
+
+                // Show banner
+                banner.className = `alert-banner ${current === 'surprised' ? 'surprise' : 'fear'}`;
+                alertText.textContent = current === 'surprised'
+                    ? '⚡ Sudden SURPRISE detected!'
+                    : '⚠️ Signs of FEAR/ANXIETY detected!';
+
+                // Log alert
+                alerts.unshift({
+                    type: current,
+                    confidence,
+                    time: new Date()
+                });
+                alerts = alerts.slice(0, 10);
+                updateAlertsLog();
+
+                // Hide banner after 2s
+                setTimeout(() => {
+                    banner.className = 'alert-banner';
+                }, 2000);
+            }
+        }
+
+        function updateAlertsLog() {
+            const log = document.getElementById('alertsLog');
+
+            if (alerts.length === 0) {
+                log.innerHTML = '<div style="color: #64748b; font-size: 0.8rem; text-align: center; padding: 16px;">No sudden changes detected</div>';
+                return;
+            }
+
+            log.innerHTML = alerts.map(a => `
+                <div class="alert-item ${a.type === 'surprised' ? 'surprise' : 'fear'}">
+                    <span>${EMOTIONS[a.type].emoji}</span>
+                    <span>${a.type === 'surprised' ? 'Sudden surprise' : 'Fear/anxiety'}</span>
+                    <span style="color: ${EMOTIONS[a.type].color}">${(a.confidence * 100).toFixed(0)}%</span>
+                    <span class="alert-time">${a.time.toLocaleTimeString()}</span>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // EYE TRACKING
+        // ============================================
+
+        function processEyeTracking(landmarks) {
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+
+            // Calculate eye aspect ratio (EAR) for blink detection
+            const leftEAR = calculateEAR(leftEye);
+            const rightEAR = calculateEAR(rightEye);
+
+            const leftOpen = leftEAR > 0.2;
+            const rightOpen = rightEAR > 0.2;
+
+            // Update eye indicators
+            document.getElementById('leftEye').className = `eye-dot ${leftOpen ? 'open' : 'closed'}`;
+            document.getElementById('rightEye').className = `eye-dot ${rightOpen ? 'open' : 'closed'}`;
+
+            // Blink detection
+            if (!leftOpen && !rightOpen && lastEyeState.left && lastEyeState.right) {
+                blinkCount++;
+            }
+
+            lastEyeState = { left: leftOpen, right: rightOpen };
+
+            // Blink rate (per minute)
+            const elapsed = (Date.now() - blinkStartTime) / 1000;
+            const blinksPerMin = elapsed > 0 ? Math.round((blinkCount / elapsed) * 60) : 0;
+            document.getElementById('blinkRate').textContent = blinksPerMin;
+
+            // Gaze stability (simplified)
+            const leftCenter = getEyeCenter(leftEye);
+            const rightCenter = getEyeCenter(rightEye);
+            const gazeCenter = { x: (leftCenter.x + rightCenter.x) / 2, y: (leftCenter.y + rightCenter.y) / 2 };
+
+            gazePoints.push(gazeCenter);
+            if (gazePoints.length > 30) gazePoints.shift();
+
+            if (gazePoints.length > 5) {
+                const variance = calculateGazeVariance();
+                const stability = variance < 5 ? 'Stable' : variance < 15 ? 'Moderate' : 'Unstable';
+                document.getElementById('gazeStability').textContent = stability;
+            }
+        }
+
+        function calculateEAR(eye) {
+            // Eye Aspect Ratio formula
+            const v1 = distance(eye[1], eye[5]);
+            const v2 = distance(eye[2], eye[4]);
+            const h = distance(eye[0], eye[3]);
+            return (v1 + v2) / (2 * h);
+        }
+
+        function distance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        function getEyeCenter(eye) {
+            const sum = eye.reduce((acc, pt) => ({ x: acc.x + pt.x, y: acc.y + pt.y }), { x: 0, y: 0 });
+            return { x: sum.x / eye.length, y: sum.y / eye.length };
+        }
+
+        function calculateGazeVariance() {
+            if (gazePoints.length < 2) return 0;
+            const avg = gazePoints.reduce((a, p) => ({ x: a.x + p.x, y: a.y + p.y }), { x: 0, y: 0 });
+            avg.x /= gazePoints.length;
+            avg.y /= gazePoints.length;
+
+            const variance = gazePoints.reduce((sum, p) =>
+                sum + Math.pow(p.x - avg.x, 2) + Math.pow(p.y - avg.y, 2), 0
+            ) / gazePoints.length;
+
+            return Math.sqrt(variance);
+        }
+
+        // ============================================
+        // AI ANALYSIS
+        // ============================================
+
+        async function analyzeWithAI(expressions) {
+            const aiSummary = document.getElementById('aiSummary');
+            const aiDot = document.getElementById('aiDot');
+            const aiStatus = document.getElementById('aiStatus');
+
+            aiDot.className = 'status-dot loading';
+            aiStatus.textContent = 'Analyzing...';
+
+            const sorted = Object.entries(expressions).sort((a, b) => b[1] - a[1]);
+            const [dominant, confidence] = sorted[0];
+
+            // Build context
+            const recentEmotions = emotionHistory.slice(-10).map(e => e.emotion);
+            const blinkRate = document.getElementById('blinkRate').textContent;
+            const gazeStability = document.getElementById('gazeStability').textContent;
+            const recentAlerts = alerts.slice(0, 3).map(a => a.type);
+
+            const prompt = `You are an educational AI analyzing a student's emotional state during a learning session. Provide a brief, realistic assessment.
+
+Current State:
+- Dominant Expression: ${dominant} (${(confidence * 100).toFixed(0)}% confidence)
+- All Expressions: ${sorted.map(([e, c]) => `${e}: ${(c * 100).toFixed(0)}%`).join(', ')}
+- Blink Rate: ${blinkRate}/min (normal: 15-20/min)
+- Gaze Stability: ${gazeStability}
+- Recent Emotion Trend: ${recentEmotions.slice(-5).join(' → ') || 'stable'}
+- Recent Alerts: ${recentAlerts.length > 0 ? recentAlerts.join(', ') : 'none'}
+
+Instructions:
+1. Describe the student's likely emotional/cognitive state in 2 sentences
+2. Suggest one actionable recommendation for a teacher
+3. Be realistic - acknowledge detection limitations
+4. Keep response under 80 words`;
+
+            try {
+                const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        prompt: prompt,
+                        stream: false,
+                        options: { temperature: 0.4, num_predict: 120 }
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    aiSummary.textContent = data.response?.trim() || 'No response';
+                    aiDot.className = 'status-dot active';
+                    aiStatus.textContent = 'Connected';
+                }
+            } catch (e) {
+                console.error('AI error:', e);
+                aiSummary.textContent = '⚠️ Could not connect to AI';
+                aiDot.className = 'status-dot error';
+                aiStatus.textContent = 'Error';
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        document.getElementById('startBtn').addEventListener('click', startCamera);
+        document.getElementById('stopBtn').addEventListener('click', stopCamera);
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+
+</html>
