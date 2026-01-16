@@ -13,6 +13,7 @@ import AdminResults from './pages/admin/Results'
 import UserDashboard from './pages/user/Dashboard'
 import UserTask from './pages/user/Task'
 import UserComplete from './pages/user/Complete'
+import ReadingTask from './pages/user/ReadingTask'
 
 // Landing
 import Landing from './pages/Landing'
@@ -34,6 +35,7 @@ function App() {
             <Route path="/user" element={<UserLayout />}>
                 <Route index element={<UserDashboard />} />
                 <Route path="task/:id" element={<UserTask />} />
+                <Route path="reading-task" element={<ReadingTask />} />
                 <Route path="complete" element={<UserComplete />} />
             </Route>
 

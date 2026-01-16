@@ -1,0 +1,20 @@
+{
+    "name": "adhara",
+    "version": "0.1.0",
+    "description": "ADHARA - AI-Assisted Early Warning System for Learning Friction Detection",
+    "private": true,
+    "scripts": {
+        "dev": "cd client && npm run dev",
+        "build": "cd client && npm run build",
+        "preview": "cd client && npm run preview",
+        "install:client": "cd client && npm install"
+    },
+    "keywords": [
+        "learning",
+        "friction",
+        "detection",
+        "education",
+        "ai"
+    ],
+    "license": "MIT"
+}
