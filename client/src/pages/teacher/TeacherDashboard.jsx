@@ -195,35 +195,85 @@ function TeacherDashboard() {
 
         const faceAnalysis = summary.faceAnalysis || {}
 
-        const prompt = `You are a learning analyst. Provide a BRIEF, STRUCTURED report.
+        const prompt = `You are ADHARA, an AI-powered early learning friction detection system for educational professionals. Generate a comprehensive behavioral analysis report.
 
-STUDENT: ${child.name || 'Unknown'}, Age ${child.age || '?'}
-SESSION: ${responses.length} activities, ${responses.filter(r => r.correct).length} correct, ${summary.avgResponseTime || 0}ms avg response
-FRICTION: ${friction.level} (${friction.score.toFixed(0)}% deviation from baseline)
-SPEECH: ${speechAnalysis.totalWordsSpoken || 0} words, ${speechAnalysis.fillerWordCount || 0} fillers, ${speechAnalysis.stammerCount || 0} stammers
-EMOTION: ${faceAnalysis.dominantEmotion || 'unknown'} dominant, ${((faceAnalysis.stressRatio || 0) * 100).toFixed(0)}% stress indicators
+CRITICAL RULES:
+- Use ONLY terms: "learning friction", "behavioral indicators", "interaction patterns", "early intervention signals"
+- NEVER use: diagnosis, disability, disorder, medical, clinical, treatment, patient, symptoms
+- Be specific with data and percentages
+- End ALL recommendations with "Human review suggested"
 
-RESPOND IN THIS EXACT FORMAT (keep each line SHORT):
+---
+## STUDENT PROFILE
+- **Name:** ${child.name || 'Student'}
+- **Age:** ${child.age || 'Unknown'} years
+- **Age Group Baseline:** ${baseline?.label || 'Standard'}
 
-## Summary
-One sentence overview of the session.
+## SESSION METRICS
+| Metric | Observed | Baseline | Deviation |
+|--------|----------|----------|-----------|
+| Response Time | ${summary.avgResponseTime || 0}ms | ${baseline?.mouse?.avgHesitationMs || 1800}ms | ${deviations?.responseTimeDeviation || 0}% |
+| Corrections | ${summary.totalCorrections || 0} | ${baseline?.mouse?.avgCorrections || 2} | ${deviations?.correctionsDeviation || 0}% |
+| Hesitations | ${summary.hesitationCount || 0} | Expected <3 | ${deviations?.hesitationDeviation || 0}% |
 
-## Friction Levels
-- **Reading**: LOW/MEDIUM/HIGH - Brief reason (5 words max)
-- **Attention**: LOW/MEDIUM/HIGH - Brief reason (5 words max)
-- **Processing**: LOW/MEDIUM/HIGH - Brief reason (5 words max)
-- **Speech**: LOW/MEDIUM/HIGH - Brief reason (5 words max)
-- **Emotional**: LOW/MEDIUM/HIGH - Brief reason (5 words max)
+## MULTI-MODAL DATA CAPTURED
+- **Motor Signals:** ${summary.totalMouseMovements || 0} tracked movements
+- **Speech Analysis:** ${speechAnalysis.totalWordsSpoken || 0} words, ${speechAnalysis.fillerWordCount || 0} fillers, ${speechAnalysis.stammerCount || 0} repetitions
+- **Emotional State:** ${faceAnalysis.dominantEmotion || 'neutral'} dominant (${((faceAnalysis.stressRatio || 0) * 100).toFixed(0)}% stress markers)
+- **Task Completion:** ${responses.length} activities (${responses.filter(r => r.correct).length}/${responses.length} correct)
 
-## Key Observations
-- First key observation (one short sentence)
-- Second key observation (one short sentence)
+---
 
-## Teacher Actions
-1. First actionable step
-2. Second actionable step
+Generate a PROFESSIONAL REPORT with these EXACT sections:
 
-IMPORTANT: Keep ALL lines under 60 characters. Be concise.`
+# 📊 ADHARA Learning Friction Analysis Report
+
+## Executive Summary
+[2-3 sentences: Overall friction level (${friction.level}), key finding, and primary recommendation]
+
+## Domain-Specific Friction Indicators
+
+### 📖 Reading & Comprehension Friction
+- **Level:** [LOW/MEDIUM/HIGH]
+- **Indicator:** [Specific behavioral pattern observed]
+- **Baseline Comparison:** [X% above/below expected]
+
+### 🧠 Attention & Focus Friction
+- **Level:** [LOW/MEDIUM/HIGH]
+- **Indicator:** [Specific behavioral pattern observed]
+- **Baseline Comparison:** [X% above/below expected]
+
+### 🔢 Processing Speed Friction
+- **Level:** [LOW/MEDIUM/HIGH]
+- **Indicator:** [Response time pattern analysis]
+- **Baseline Comparison:** [X% above/below expected]
+
+### 🗣️ Speech & Verbal Friction
+- **Level:** [LOW/MEDIUM/HIGH]
+- **Indicator:** [Speech pattern analysis]
+- **Data:** [Specific numbers from speech analysis]
+
+### 💭 Emotional Regulation Friction
+- **Level:** [LOW/MEDIUM/HIGH]
+- **Indicator:** [Emotional state patterns]
+- **Stress Markers:** [Percentage and context]
+
+## Behavioral Pattern Summary
+${strengths.length > 0 ? `**Positive Indicators:**\n${strengths.map(s => `✅ ${s}`).join('\n')}` : ''}
+${concerns.length > 0 ? `**Areas Requiring Attention:**\n${concerns.map(c => `⚠️ ${c}`).join('\n')}` : ''}
+
+## Early Intervention Recommendations
+1. [First specific, actionable recommendation based on highest friction area]
+2. [Second recommendation for supporting the learner]
+3. [Third recommendation for monitoring/follow-up]
+
+## Human Review Priority
+[HIGH/MEDIUM/LOW] - [Brief justification based on overall friction level]
+
+---
+⚠️ **Disclaimer:** This analysis identifies behavioral patterns for educational support purposes only. All findings require human review by qualified educators. ADHARA does not diagnose learning disabilities.
+
+*Human review suggested for all findings.*`
 
 
         try {
@@ -234,7 +284,7 @@ IMPORTANT: Keep ALL lines under 60 characters. Be concise.`
                     model: MODEL,
                     prompt,
                     stream: false,
-                    options: { temperature: 0.2, num_predict: 800 }
+                    options: { temperature: 0.2, num_predict: 1500 }
                 })
             })
             if (res.ok) {

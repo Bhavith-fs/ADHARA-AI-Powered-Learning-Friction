@@ -16,5 +16,8 @@
         "education",
         "ai"
     ],
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "face-api.js": "^0.20.1"
+    }
 }
