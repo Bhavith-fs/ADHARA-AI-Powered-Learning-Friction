@@ -1021,8 +1021,7 @@ function ChildActivity() {
             setAiAnalysis(aiRecommendation)
             console.log('🧠 AI Recommendation:', aiRecommendation)
 
-            // If AI recommends follow-up questions, add them
-            if (aiRecommendation.continueSession && aiRecommendation.additionalQuestions > 0) {
+            if (aiRecommendation.continueSession && aiRecommendation.additionalQuestions > 0 && aiRecommendation.focusDomains.length > 0) {
                 const followUpQuestions = generateFollowUpQuestions(aiRecommendation)
                 console.log(`🧠 Adding ${followUpQuestions.length} follow-up questions for: ${aiRecommendation.focusDomains.join(', ')}`)
 
@@ -1034,7 +1033,10 @@ function ChildActivity() {
                     setVoiceResult('')
                     setCurrentTries(0)
                     setSessionPhase('followup')
-                    setMascotMessage(`Let's try a few more activities in ${aiRecommendation.focusDomains.join(' and ')}! 🎯`)
+                    const domainText = aiRecommendation.focusDomains.length > 0
+                        ? aiRecommendation.focusDomains.join(' and ')
+                        : 'a few more areas'
+                    setMascotMessage(`Let's try a few more activities in ${domainText}! 🎯`)
                 }, 2000) // Show "thinking" message for 2 seconds
             } else {
                 // No follow-up needed, session complete
