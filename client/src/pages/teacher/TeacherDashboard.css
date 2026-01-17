@@ -839,8 +839,8 @@
 }
 
 .status-screen {
-    background: #ffebee;
-    color: #c62828;
+    background: #fff3e0;
+    color: #e65100;
 }
 
 .domain-details {
@@ -856,12 +856,23 @@
 .concern-areas {
     margin-top: 16px;
     padding: 12px;
-    background: #fff3e0;
+    background: #e3f2fd;
     border-radius: 8px;
     font-size: 0.85rem;
-    color: #e65100;
+    color: #1565c0;
 }
 
 .concern-areas strong {
-    color: #bf360c;
+    color: #0d47a1;
+}
+
+.friction-note {
+    margin-top: 16px;
+    padding: 12px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #2e7d32;
+    text-align: center;
+    font-style: italic;
 }

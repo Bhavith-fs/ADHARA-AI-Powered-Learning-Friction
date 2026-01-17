@@ -195,106 +195,88 @@ function TeacherDashboard() {
         const faceAnalysis = summary.faceAnalysis || {}
         const baseline = deviations?.baseline || { label: 'Standard', mouse: { avgHesitationMs: 1800, avgCorrections: 2 } }
 
-        // NEW: Get disorder detection results
-        const disorderDetection = summary.disorderDetection || {}
-        const screeningPriority = summary.screeningPriority || { priority: 'LOW', reason: 'Not analyzed' }
+        // Get learning friction observations
+        const frictionObservations = summary.disorderDetection || {}
+        const frictionLevel = summary.screeningPriority || { priority: 'LOW', reason: 'Session completed smoothly' }
 
-        // Format disorder detection for prompt
-        const formatDetectionResults = () => {
-            const results = []
-            Object.entries(disorderDetection).forEach(([key, data]) => {
-                if (data.dataAvailable) {
-                    results.push(`- ${data.icon} ${data.name}: ${data.overallStatus} (${data.overallScore}% concern)`)
-                    if (data.overallStatus !== 'TYPICAL') {
-                        Object.entries(data.indicators || {}).forEach(([ind, indData]) => {
-                            if (indData.status !== 'TYPICAL') {
-                                results.push(`  • ${indData.label}: ${indData.observed} (expected ${indData.expected}, ${indData.deviation > 0 ? '+' : ''}${indData.deviation}%)`)
-                            }
-                        })
+        // Format observations in educator-friendly language
+        const formatObservations = () => {
+            const observations = []
+            Object.entries(frictionObservations).forEach(([key, data]) => {
+                if (data.dataAvailable && data.overallStatus !== 'TYPICAL') {
+                    const friendlyNames = {
+                        dyslexia: 'Reading & Word Recognition',
+                        dyscalculia: 'Number & Counting',
+                        adhd: 'Focus & Attention',
+                        auditoryProcessing: 'Listening & Verbal',
+                        visualProcessing: 'Visual Pattern'
                     }
+                    observations.push(`- ${data.icon} ${friendlyNames[key] || data.name}: Showed some hesitation or extra effort`)
                 }
             })
-            return results.length > 0 ? results.join('\n') : 'No domain-specific analysis available'
+            return observations.length > 0 ? observations.join('\n') : 'Learning felt smooth across all observed areas.'
         }
 
-        const prompt = `You are ADHARA, an AI system for EARLY DETECTION of learning difficulties. Generate a clinical-grade screening report.
+        // Calculate overall friction level
+        const overallFriction = frictionLevel.priority === 'HIGH' ? 'Elevated' :
+            frictionLevel.priority === 'MEDIUM' ? 'Moderate' : 'Low'
 
-CRITICAL RULES:
-- You ARE allowed to mention potential early indicators of: dyslexia patterns, dyscalculia patterns, attention regulation patterns, auditory processing patterns, visual processing patterns
-- Use terms like: "early indicators consistent with...", "patterns that may suggest...", "warrants further screening for..."
-- Still emphasize this is SCREENING not DIAGNOSIS
-- Be specific and clinical in your analysis
-- End recommendations with "Professional evaluation recommended"
+        const prompt = `You are ADHARA, an AI-assisted early learning support system for educators.
 
----
-## STUDENT PROFILE
-- **Name:** ${child.name || 'Student'}
-- **Age:** ${child.age || 'Unknown'} years
-- **Baseline Group:** ${baseline?.label || 'Standard'}
+🌟 YOUR NORTH STAR: "ADHARA helps educators notice when learning feels hard, so support can happen earlier."
 
-## SCREENING PRIORITY: ${screeningPriority.priority}
-**Reason:** ${screeningPriority.reason}
-${screeningPriority.areas?.length > 0 ? `**Concern Areas:** ${screeningPriority.areas.join(', ')}` : ''}
-
-## DOMAIN-SPECIFIC DETECTION RESULTS
-${formatDetectionResults()}
-
-## SESSION BEHAVIORAL DATA
-- **Motor Patterns:** ${summary.totalMouseMovements || 0} movements, ${summary.hesitationCount || 0} hesitations
-- **Speech Analysis:** ${speechAnalysis.totalWordsSpoken || 0} words, ${speechAnalysis.fillerWordCount || 0} fillers, ${speechAnalysis.stammerCount || 0} speech repetitions
-- **Emotional Markers:** ${faceAnalysis.dominantEmotion || 'neutral'} (${((faceAnalysis.stressRatio || 0) * 100).toFixed(0)}% stress indicators)
-- **Task Performance:** ${responses.filter(r => r.correct).length}/${responses.length} correct (${Math.round((responses.filter(r => r.correct).length / Math.max(responses.length, 1)) * 100)}% accuracy)
-- **Response Speed:** ${summary.avgResponseTime || 0}ms average (baseline: ${baseline?.mouse?.avgHesitationMs || 1800}ms)
+CRITICAL LANGUAGE RULES (FOLLOW STRICTLY):
+- NEVER use: diagnosis, disorder, disease, abnormal, clinical, deficit, impaired, accuracy, probability
+- ALWAYS use: learning friction, interaction patterns, early support, educator insight, observation, suggestion
+- Sound CALM, OBSERVATIONAL, SUPPORTIVE, and NON-ALARMING
+- This is NOT a medical or psychological tool
+- Never recommend professional evaluations or referrals
+- All suggestions should be educational, not medical
 
 ---
 
-Generate a CLINICAL SCREENING REPORT with these EXACT sections:
+## 🎒 SESSION OVERVIEW
+**Learner:** ${child.name || 'Student'} | **Age:** ${child.age || 'Unknown'} years
 
-# 🔬 ADHARA Early Detection Screening Report
+**What happened:**
+- Completed ${responses.length} learning activities
+- Got ${responses.filter(r => r.correct).length} right on first try
+- Took about ${Math.round((summary.avgResponseTime || 0) / 1000)}s average to respond
+- Showed ${faceAnalysis.dominantEmotion || 'calm'} demeanor throughout
 
-## Executive Summary
-[State the overall concern level and most significant finding. Be direct about which learning patterns were detected.]
+**Interaction patterns observed:**
+- Hesitation moments: ${summary.hesitationCount || 0}
+- Corrections needed: ${summary.totalCorrections || 0}
+- Engagement level: ${(faceAnalysis.gazeOnScreenPercent || 80)}% focused on screen
 
-## 🎯 Screening Results by Domain
-
-### 📖 Phonological Processing (Dyslexia Indicators)
-- **Status:** [TYPICAL / WATCH / SCREEN]
-- **Key Finding:** [Specific pattern observed or "Within normal range"]
-- **Clinical Indicator:** [If WATCH/SCREEN: "Early indicators consistent with phonological processing differences" or similar]
-
-### 🔢 Numerical Cognition (Dyscalculia Indicators)  
-- **Status:** [TYPICAL / WATCH / SCREEN]
-- **Key Finding:** [Specific pattern observed or "Within normal range"]
-- **Clinical Indicator:** [If WATCH/SCREEN: "Patterns suggest numerical processing may warrant evaluation"]
-
-### 🧠 Executive Function (Attention Indicators)
-- **Status:** [TYPICAL / WATCH / SCREEN]
-- **Key Finding:** [Gaze stability, impulse control, task switching analysis]
-- **Clinical Indicator:** [If elevated: "Attention regulation patterns warrant further screening"]
-
-### 👂 Auditory Processing
-- **Status:** [TYPICAL / WATCH / SCREEN]
-- **Key Finding:** [Speech fluency, verbal hesitation analysis]
-- **Clinical Indicator:** [Based on filler words, stammers, verbal response patterns]
-
-### 👁️ Visual Processing
-- **Status:** [TYPICAL / WATCH / SCREEN]
-- **Key Finding:** [Pattern recognition, shape matching analysis]
-- **Clinical Indicator:** [Based on visual task performance]
-
-## ⚠️ Early Intervention Recommendations
-${screeningPriority.priority === 'HIGH' ? '**PRIORITY ACTION REQUIRED:**' : ''}
-1. [Most important specific action based on highest concern area]
-2. [Second specific recommendation]
-3. [Monitoring/follow-up recommendation]
-
-## 📋 Recommended Professional Screenings
-[List specific formal assessments recommended based on elevated areas, e.g., "Comprehensive phonological awareness assessment", "Attention and executive function evaluation"]
+**Areas where extra effort was noticed:**
+${formatObservations()}
 
 ---
-⚠️ **SCREENING NOTICE:** This report identifies behavioral patterns for early intervention purposes. Elevated indicators suggest areas for professional evaluation - they are NOT diagnoses. All findings require validation by qualified educational psychologists or learning specialists.
 
-*Professional evaluation recommended for all elevated domains.*`
+Generate a CALM, SUPPORTIVE learning summary using this EXACT format:
+
+# 🌱 ADHARA Learning Session Summary
+
+## Overall Learning Friction Level
+**${overallFriction}**
+
+## What Was Observed
+[2-3 calm sentences describing what you noticed during this session. Focus on behavior, not judgment. Use phrases like "The learner showed...", "There were moments of...", "Interaction patterns suggest..."]
+
+## What This May Mean
+[1-2 supportive sentences. Use phrases like "These patterns suggest learning may have felt...", "This is common when...", "This may indicate that...". NEVER sound alarming.]
+
+## Suggested Next Steps for Educators
+1. [A simple, actionable classroom adjustment - like shorter tasks, more breaks, different format]
+2. [A supportive strategy - like pairing with a buddy, adding visual guides, giving extra time]
+3. [An observation suggestion - like "notice if this pattern continues across sessions"]
+
+## 💚 Educator Note
+[One warm, encouraging sentence for the teacher. Remind them this is about early support, not labels.]
+
+---
+*This is an early learning support signal, not a diagnosis. ADHARA helps notice when learning feels hard, so support can happen earlier.*`
 
 
         try {
@@ -586,50 +568,67 @@ ${screeningPriority.priority === 'HIGH' ? '**PRIORITY ACTION REQUIRED:**' : ''}
                                     </div>
                                 )}
 
-                                {/* NEW: Screening Results Card */}
+                                {/* Learning Friction Observations Card */}
                                 {selectedSession.summary?.disorderDetection && (
                                     <div className="screening-results-card">
-                                        <h4>🔬 Early Detection Screening Results</h4>
+                                        <h4>🌱 Learning Friction Observations</h4>
                                         <div className="screening-priority" style={{
-                                            background: selectedSession.summary.screeningPriority?.priority === 'HIGH' ? '#ffebee' :
-                                                selectedSession.summary.screeningPriority?.priority === 'MEDIUM' ? '#fff3e0' : '#e8f5e9',
-                                            borderLeft: `4px solid ${selectedSession.summary.screeningPriority?.priority === 'HIGH' ? '#e53935' :
-                                                    selectedSession.summary.screeningPriority?.priority === 'MEDIUM' ? '#f57c00' : '#43a047'
+                                            background: selectedSession.summary.screeningPriority?.priority === 'HIGH' ? '#fff3e0' :
+                                                selectedSession.summary.screeningPriority?.priority === 'MEDIUM' ? '#fffde7' : '#e8f5e9',
+                                            borderLeft: `4px solid ${selectedSession.summary.screeningPriority?.priority === 'HIGH' ? '#ff9800' :
+                                                selectedSession.summary.screeningPriority?.priority === 'MEDIUM' ? '#fbc02d' : '#43a047'
                                                 }`
                                         }}>
                                             <span className="priority-badge" style={{
-                                                background: selectedSession.summary.screeningPriority?.priority === 'HIGH' ? '#e53935' :
-                                                    selectedSession.summary.screeningPriority?.priority === 'MEDIUM' ? '#f57c00' : '#43a047'
+                                                background: selectedSession.summary.screeningPriority?.priority === 'HIGH' ? '#ff9800' :
+                                                    selectedSession.summary.screeningPriority?.priority === 'MEDIUM' ? '#fbc02d' : '#43a047'
                                             }}>
-                                                {selectedSession.summary.screeningPriority?.priority || 'LOW'}
+                                                {selectedSession.summary.screeningPriority?.priority === 'HIGH' ? 'Elevated' :
+                                                    selectedSession.summary.screeningPriority?.priority === 'MEDIUM' ? 'Moderate' : 'Smooth'}
                                             </span>
-                                            <span className="priority-reason">{selectedSession.summary.screeningPriority?.reason || 'Analysis pending'}</span>
+                                            <span className="priority-reason">{selectedSession.summary.screeningPriority?.reason || 'Session completed'}</span>
                                         </div>
                                         <div className="domain-results">
-                                            {Object.entries(selectedSession.summary.disorderDetection || {}).map(([key, domain]) => (
-                                                domain.dataAvailable && (
+                                            {Object.entries(selectedSession.summary.disorderDetection || {}).map(([key, domain]) => {
+                                                // Educator-friendly domain names
+                                                const friendlyNames = {
+                                                    dyslexia: 'Reading & Words',
+                                                    dyscalculia: 'Numbers & Counting',
+                                                    adhd: 'Focus & Attention',
+                                                    auditoryProcessing: 'Listening & Verbal',
+                                                    visualProcessing: 'Visual Patterns'
+                                                }
+                                                const statusLabels = {
+                                                    'TYPICAL': 'Smooth',
+                                                    'WATCH': 'Some effort',
+                                                    'SCREEN': 'Extra support may help'
+                                                }
+                                                return domain.dataAvailable && (
                                                     <div key={key} className="domain-item">
                                                         <div className="domain-header">
                                                             <span className="domain-icon">{domain.icon}</span>
-                                                            <span className="domain-name">{domain.name}</span>
+                                                            <span className="domain-name">{friendlyNames[key] || domain.name}</span>
                                                             <span className={`domain-status status-${domain.overallStatus?.toLowerCase()}`}>
-                                                                {domain.overallStatus}
+                                                                {statusLabels[domain.overallStatus] || domain.overallStatus}
                                                             </span>
                                                         </div>
                                                         {domain.overallStatus !== 'TYPICAL' && domain.elevatedCount > 0 && (
                                                             <div className="domain-details">
-                                                                <small>{domain.elevatedCount} indicator(s) elevated</small>
+                                                                <small>Noticed some hesitation here</small>
                                                             </div>
                                                         )}
                                                     </div>
                                                 )
-                                            ))}
+                                            })}
                                         </div>
                                         {selectedSession.summary.screeningPriority?.areas?.length > 0 && (
-                                            <div className="concern-areas">
-                                                <strong>Concern Areas:</strong> {selectedSession.summary.screeningPriority.areas.join(', ')}
+                                            <div className="concern-areas" style={{ background: '#e3f2fd', color: '#1565c0' }}>
+                                                <strong>Areas to observe:</strong> {selectedSession.summary.screeningPriority.areas.join(', ')}
                                             </div>
                                         )}
+                                        <p className="friction-note">
+                                            💚 This is an early support signal, not a label. Learning friction is normal and often temporary.
+                                        </p>
                                     </div>
                                 )}
                             </div>
