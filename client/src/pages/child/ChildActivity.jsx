@@ -1444,11 +1444,7 @@ function ChildActivity() {
                                 <div className="options-grid">
                                     {currentActivity.options.map((opt, i) => (
                                         <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>
-<<<<<<< HEAD
                                             {currentActivity.optionLabels?.[i] || opt}
-=======
-                                            {opt}
->>>>>>> e19ea92c6c082ccd7f2852a91e63697f211fd983
                                         </button>
                                     ))}
                                 </div>
