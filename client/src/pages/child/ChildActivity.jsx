@@ -1,105 +1,231 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadFaceModels, analyzeFace, FaceAnalysisSession } from '../../utils/faceAnalysis'
+import { generateAdaptiveSession, getFollowUpActivities, generateScreeningContext } from '../../utils/questionGenerator'
+import { analyzeSession, getScreeningPriority, generateDetectionSummary } from '../../utils/disorderDetection'
 import './ChildActivity.css'
 
 /**
- * Child Activity - Interactive activities with FULL TRACKING
- * Enhanced: Speech Analysis + Face/Emotion Detection
+ * Child Activity - AI-Powered Early Detection Screening
+ * 
+ * Features:
+ * - Adaptive screening questions based on child's age
+ * - Domain-specific activities (dyslexia, dyscalculia, ADHD, auditory, visual)
+ * - Follow-up questions when errors detected
+ * - Multi-modal tracking (mouse, speech, face)
+ * - Disorder pattern analysis
  */
 
-// Extended activities with more types
-const ACTIVITIES = [
-    // COUNTING
-    {
-        id: 1,
-        type: 'counting',
-        question: "How many stars do you see? ⭐",
-        count: 5,
-        options: [4, 5, 6, 7],
-        correct: 5
-    },
-    // LETTER RECOGNITION (common confusion letters)
-    {
-        id: 2,
-        type: 'letter',
-        question: "Which letter is this?",
-        showLetter: 'b',
-        options: ['b', 'd', 'p', 'q'],
-        correct: 'b'
-    },
-    // PATTERN MATCHING
-    {
-        id: 3,
-        type: 'pattern',
-        question: "What comes next? 🔴 🔵 🔴 🔵 ?",
-        options: ['🔴', '🔵', '🟢', '🟡'],
-        correct: '🔴'
-    },
-    // VERBAL ACTIVITY - Read aloud
-    {
-        id: 4,
-        type: 'verbal',
-        question: "Say this word out loud:",
-        word: "BUTTERFLY",
-        instruction: "Click the 🎤 and say the word clearly"
-    },
-    // DOT MATCHING - Connect the sequence
-    {
-        id: 5,
-        type: 'sequence',
-        question: "Put these numbers in order (smallest to biggest):",
-        items: [7, 2, 5, 9],
-        correct: [2, 5, 7, 9]
-    },
-    // PUZZLE - Find missing piece
-    {
-        id: 6,
-        type: 'puzzle',
-        question: "Which piece completes the picture?",
-        pattern: ['🟦', '🟦', '🟦', '🟦', '❓', '🟦', '🟦', '🟦', '🟦'],
-        options: ['🟦', '🟥', '🟨', '🟩'],
-        correct: '🟦'
-    },
-    // MATH
-    {
-        id: 7,
-        type: 'math',
-        question: "What is 3 + 4?",
-        options: [5, 6, 7, 8],
-        correct: 7
-    },
-    // SHAPE MATCHING
-    {
-        id: 8,
-        type: 'matching',
-        question: "Which shape is different?",
-        shapes: ['🔵', '🔵', '🔵', '🟢'],
-        options: [0, 1, 2, 3],
-        correct: 3,
-        optionLabels: ['1st', '2nd', '3rd', '4th']
-    },
-    // DRAWING
-    {
-        id: 9,
-        type: 'drawing',
-        question: "Draw a circle with your finger!",
-        isDrawing: true
-    }
-]
-
 const MASCOT_MESSAGES = {
-    start: ["Let's play!", "Ready for fun?", "Here we go! 🎉"],
-    correct: ["Yay! Great job! 🎉", "You're amazing! ⭐", "Wow, so smart! 🌟", "Perfect! 👏"],
-    wrong: ["Good try! Let's try again! 💪", "Almost! Try once more! 🌈", "You can do it! 🎈"],
+    start: ["Let's play some games!", "Ready for fun activities?", "Here we go! 🎉"],
+    correct: ["Yay! Great job! 🎉", "You're amazing! ⭐", "Wow! 🌟", "Perfect! 👏"],
+    wrong: ["Good try! 💪", "Almost! 🌈", "You can do it! 🎈"],
     next: ["Here's another one!", "Let's try this!", "You're doing great! 🌟"],
     listening: ["I'm listening! 🎤", "Say it clearly! 👂"],
-    complete: ["All done! You're a superstar! ⭐🌟⭐"]
+    complete: ["All done! You're a superstar! ⭐🌟⭐"],
+    screening: ["Let's see how you learn best! 🧠", "These games help us understand you better! 🎯"]
 }
 
 // Filler words and stammers to detect
 const FILLER_PATTERNS = ['um', 'uh', 'uhh', 'umm', 'er', 'err', 'ah', 'ahh', 'like', 'you know', 'well', 'so']
 const STAMMER_PATTERN = /\b(\w)\1+(?:\s+\1+)*\b|\b(\w+)\s+\2\b/gi // Detects "b-b-ball" or "the the"
+
+// ============ SUB-COMPONENTS FOR COMPLEX ACTIVITIES ============
+
+/**
+ * Impulse Control Activity - Go/No-Go task
+ * Child clicks ONLY when target (star) appears
+ */
+function ImpulseControlActivity({ activity, onComplete }) {
+    const [currentItem, setCurrentItem] = useState(null)
+    const [itemIndex, setItemIndex] = useState(0)
+    const [correctClicks, setCorrectClicks] = useState(0)
+    const [wrongClicks, setWrongClicks] = useState(0)
+    const [isComplete, setIsComplete] = useState(false)
+    const [showClickFeedback, setShowClickFeedback] = useState(null)
+
+    useEffect(() => {
+        if (isComplete) return
+
+        const sequence = activity.sequence || ['🔵', '⭐', '🔺', '⭐', '🟢', '⭐', '🔷']
+
+        if (itemIndex < sequence.length) {
+            // Show item
+            setCurrentItem(sequence[itemIndex])
+
+            // Move to next after delay
+            const timer = setTimeout(() => {
+                setCurrentItem(null)
+                setItemIndex(prev => prev + 1)
+            }, 1200)
+
+            return () => clearTimeout(timer)
+        } else {
+            // All done
+            setIsComplete(true)
+            onComplete(correctClicks)
+        }
+    }, [itemIndex, isComplete])
+
+    const handleClick = () => {
+        const targetEmoji = activity.sequence?.includes('⭐') ? '⭐' :
+            activity.sequence?.includes('🔴') ? '🔴' :
+                activity.sequence?.includes('❤️') ? '❤️' : '⭐'
+
+        if (currentItem === targetEmoji) {
+            setCorrectClicks(prev => prev + 1)
+            setShowClickFeedback('correct')
+        } else if (currentItem) {
+            setWrongClicks(prev => prev + 1)
+            setShowClickFeedback('wrong')
+        }
+
+        setTimeout(() => setShowClickFeedback(null), 300)
+    }
+
+    if (isComplete) {
+        return <div className="impulse-complete">Done! You got {correctClicks} correct! 🎯</div>
+    }
+
+    return (
+        <div className="impulse-activity" onClick={handleClick}>
+            <div className={`impulse-display ${showClickFeedback || ''}`}>
+                {currentItem ? (
+                    <span className="impulse-item">{currentItem}</span>
+                ) : (
+                    <span className="impulse-waiting">Wait...</span>
+                )}
+            </div>
+            <p className="impulse-instruction">👆 Tap when you see the target!</p>
+            <div className="impulse-score">
+                Correct: {correctClicks} | Wrong clicks: {wrongClicks}
+            </div>
+        </div>
+    )
+}
+
+/**
+ * Sustained Attention Activity - Count appearing targets
+ */
+function SustainedAttentionActivity({ activity, onComplete }) {
+    const [count, setCount] = useState(0)
+    const [isComplete, setIsComplete] = useState(false)
+    const [showTarget, setShowTarget] = useState(false)
+    const [targetCount, setTargetCount] = useState(0)
+
+    useEffect(() => {
+        if (isComplete) return
+
+        let shown = 0
+        const totalTargets = activity.targetCount || 5
+        const duration = activity.duration || 15000
+        const interval = duration / (totalTargets * 2)
+
+        const showInterval = setInterval(() => {
+            if (shown < totalTargets) {
+                setShowTarget(true)
+                shown++
+                setTargetCount(shown)
+
+                setTimeout(() => setShowTarget(false), 800)
+            } else {
+                clearInterval(showInterval)
+                setIsComplete(true)
+            }
+        }, interval)
+
+        return () => clearInterval(showInterval)
+    }, [])
+
+    const handleCountClick = () => setCount(prev => prev + 1)
+
+    if (isComplete) {
+        return (
+            <div className="sustained-complete">
+                <p>How many did you count?</p>
+                <div className="count-buttons">
+                    {[...Array(10)].map((_, i) => (
+                        <button key={i} className="count-button" onClick={() => onComplete(i + 1)}>
+                            {i + 1}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="sustained-activity">
+            <div className="sustained-display" onClick={handleCountClick}>
+                {showTarget ? (
+                    <span className="sustained-target">🔴</span>
+                ) : (
+                    <span className="sustained-wait">👀</span>
+                )}
+            </div>
+            <p>Watch for red circles! Count them in your head.</p>
+        </div>
+    )
+}
+
+/**
+ * Visual Memory Activity - Remember and recall sequence
+ */
+function VisualMemoryActivity({ activity, onComplete }) {
+    const [phase, setPhase] = useState('show') // 'show' or 'recall'
+    const [timeLeft, setTimeLeft] = useState(Math.ceil((activity.hideAfter || 3000) / 1000))
+
+    useEffect(() => {
+        const hideAfter = activity.hideAfter || 3000
+
+        // Countdown
+        const countdownInterval = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(countdownInterval)
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+
+        // Hide after delay
+        const timer = setTimeout(() => {
+            setPhase('recall')
+        }, hideAfter)
+
+        return () => {
+            clearTimeout(timer)
+            clearInterval(countdownInterval)
+        }
+    }, [])
+
+    if (phase === 'show') {
+        return (
+            <div className="visual-memory-show">
+                <p>Remember this! ({timeLeft}s)</p>
+                <div className="memory-sequence-display">
+                    {activity.showFirst.map((item, i) => (
+                        <span key={i} className="memory-display-item">{item}</span>
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="visual-memory-recall">
+            <p>What was the order?</p>
+            <div className="options-grid">
+                {activity.options.map((opt, i) => (
+                    <button key={i} className="option-button sequence-option" onClick={() => onComplete(i)}>
+                        {opt.join(' ')}
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+}
 
 function ChildActivity() {
     const navigate = useNavigate()
@@ -178,14 +304,24 @@ function ChildActivity() {
     // Sequence activity state
     const [selectedSequence, setSelectedSequence] = useState([])
 
+    // Dynamic screening activities (generated based on age)
+    const [activities, setActivities] = useState([])
+    const [screeningMode, setScreeningMode] = useState(true)
+
     // Load child data and initialize tracking
     useEffect(() => {
         const stored = localStorage.getItem('adhara_child')
         if (stored) {
             const data = JSON.parse(stored)
             setChildData(data)
-            setMascotMessage(`Hi ${data.name}! Let's play some fun games! 🎮`)
+            setMascotMessage(`Hi ${data.name}! ${MASCOT_MESSAGES.screening[0]}`)
             signalsRef.current.startTime = data.sessionId || Date.now()
+
+            // Generate adaptive screening session based on child's age
+            const age = parseInt(data.age) || 8
+            const screeningActivities = generateAdaptiveSession(age, null)
+            setActivities(screeningActivities)
+            console.log(`Generated ${screeningActivities.length} screening activities for age ${age}`)
         }
 
         localStorage.removeItem('adhara_session_complete')
@@ -708,28 +844,50 @@ function ChildActivity() {
         return () => clearInterval(saveInterval)
     }, [childData])
 
-    const currentActivity = ACTIVITIES[currentIndex]
+    // Use dynamic activities from state (or empty if not loaded yet)
+    const currentActivity = activities[currentIndex] || null
+
+    // Track tries per question
+    const [currentTries, setCurrentTries] = useState(0)
+    const MAX_TRIES = 3
 
     const handleAnswer = useCallback((answer) => {
         const responseTime = Date.now() - activityStartTime
         const isCorrect = answer === currentActivity.correct
+        const newTries = currentTries + 1
+
+        // Check if this is the last try or correct
+        const isFinalAttempt = newTries >= MAX_TRIES || isCorrect
 
         signalsRef.current.responses.push({
             activityId: currentActivity.id,
             type: currentActivity.type,
+            domain: currentActivity.domain,
+            category: currentActivity.category,
             answer,
             correct: isCorrect,
             responseTimeMs: responseTime,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            tries: newTries,
+            maxTriesReached: newTries >= MAX_TRIES && !isCorrect
         })
 
         if (!isCorrect) {
             signalsRef.current.corrections++
-            signalsRef.current.stressIndicators.push({
-                type: 'wrong_answer',
-                timestamp: Date.now(),
-                activity: currentActivity.id
-            })
+            if (newTries >= MAX_TRIES) {
+                signalsRef.current.stressIndicators.push({
+                    type: 'max_tries_reached',
+                    timestamp: Date.now(),
+                    activity: currentActivity.id,
+                    domain: currentActivity.domain
+                })
+            } else {
+                signalsRef.current.stressIndicators.push({
+                    type: 'wrong_answer',
+                    timestamp: Date.now(),
+                    activity: currentActivity.id
+                })
+            }
         }
 
         localStorage.setItem('adhara_live_signals', JSON.stringify({
@@ -738,27 +896,35 @@ function ChildActivity() {
             lastUpdate: new Date().toISOString()
         }))
 
+        // Determine feedback message
+        let message
+        if (isCorrect) {
+            message = MASCOT_MESSAGES.correct[Math.floor(Math.random() * MASCOT_MESSAGES.correct.length)]
+        } else if (newTries >= MAX_TRIES) {
+            message = `That's okay! The answer was "${currentActivity.correct}". Let's try another! 🌟`
+        } else {
+            message = `${MASCOT_MESSAGES.wrong[Math.floor(Math.random() * MASCOT_MESSAGES.wrong.length)]} (${MAX_TRIES - newTries} ${MAX_TRIES - newTries === 1 ? 'try' : 'tries'} left)`
+        }
+
         setShowFeedback(isCorrect ? 'correct' : 'wrong')
-        setMascotMessage(
-            isCorrect
-                ? MASCOT_MESSAGES.correct[Math.floor(Math.random() * MASCOT_MESSAGES.correct.length)]
-                : MASCOT_MESSAGES.wrong[Math.floor(Math.random() * MASCOT_MESSAGES.wrong.length)]
-        )
+        setMascotMessage(message)
+        setCurrentTries(newTries)
 
         setTimeout(() => {
             setShowFeedback(null)
-            if (isCorrect) {
+            if (isFinalAttempt) {
                 goToNext()
             }
-        }, 1500)
-    }, [currentActivity, activityStartTime, childData])
+        }, isCorrect ? 1500 : (newTries >= MAX_TRIES ? 2500 : 1500))
+    }, [currentActivity, activityStartTime, childData, currentTries])
 
     const goToNext = () => {
-        if (currentIndex < ACTIVITIES.length - 1) {
+        if (currentIndex < activities.length - 1) {
             setCurrentIndex(prev => prev + 1)
             setActivityStartTime(Date.now())
             setSelectedSequence([])
             setVoiceResult('')
+            setCurrentTries(0) // Reset tries for new question
             setMascotMessage(MASCOT_MESSAGES.next[Math.floor(Math.random() * MASCOT_MESSAGES.next.length)])
         } else {
             handleComplete()
@@ -840,9 +1006,35 @@ function ChildActivity() {
         // Get face analysis summary
         const faceAnalysisSummary = faceAnalysisSessionRef.current.getSummary()
 
+        // Run disorder detection analysis
+        const sessionForAnalysis = {
+            responses: signalsRef.current.responses,
+            summary: {
+                avgResponseTime: signalsRef.current.responses.length > 0
+                    ? Math.round(signalsRef.current.responses.reduce((sum, r) => sum + (r.responseTimeMs || 0), 0) / signalsRef.current.responses.length)
+                    : 0,
+                totalCorrections: signalsRef.current.corrections,
+                hesitationCount: signalsRef.current.hesitationEvents.length,
+                totalMouseMovements: signalsRef.current.mouseMovements,
+                speechAnalysis: signalsRef.current.speechAnalysis,
+                faceAnalysis: {
+                    gazeStability: faceAnalysisSummary.gazeStability,
+                    gazeOnScreenPercent: faceAnalysisSummary.gazeOnScreenPercent
+                }
+            }
+        }
+
+        const disorderAnalysis = analyzeSession(sessionForAnalysis, childData?.age || 8)
+        const screeningPriority = getScreeningPriority(disorderAnalysis)
+        const screeningContext = generateScreeningContext(activities, signalsRef.current.responses)
+
+        console.log('Disorder Detection Analysis:', disorderAnalysis)
+        console.log('Screening Priority:', screeningPriority)
+
         const finalSignals = {
             ...signalsRef.current,
             childData,
+            activities, // Include the activities used
             completedAt: new Date().toISOString(),
             totalDurationMs: Date.now() - signalsRef.current.startTime,
             summary: {
@@ -875,7 +1067,11 @@ function ChildActivity() {
                     emotionDistribution: faceAnalysisSummary.emotionDistribution,
                     stressRatio: faceAnalysisSummary.stressRatio,
                     recentEmotions: faceAnalysisSummary.recentEmotions
-                }
+                },
+                // NEW: Disorder detection results
+                disorderDetection: disorderAnalysis,
+                screeningPriority: screeningPriority,
+                screeningContext: screeningContext
             }
         }
 
@@ -987,9 +1183,20 @@ function ChildActivity() {
 
             {/* Progress */}
             <div className="progress-bar">
-                <div className="progress-fill" style={{ width: `${((currentIndex + 1) / ACTIVITIES.length) * 100}%` }} />
-                <span className="progress-text">{currentIndex + 1}/{ACTIVITIES.length}</span>
+                <div className="progress-fill" style={{ width: `${((currentIndex + 1) / Math.max(activities.length, 1)) * 100}%` }} />
+                <span className="progress-text">{currentIndex + 1}/{activities.length}</span>
             </div>
+
+            {/* Tries indicator */}
+            {currentActivity && (
+                <div className="tries-indicator">
+                    {[...Array(MAX_TRIES)].map((_, i) => (
+                        <span key={i} className={`try-dot ${i < currentTries ? 'used' : ''}`}>
+                            {i < currentTries ? '✕' : '●'}
+                        </span>
+                    ))}
+                </div>
+            )}
 
             {/* Activity Content */}
             <div className={`activity-content ${showFeedback || ''}`}>
@@ -1134,6 +1341,205 @@ function ChildActivity() {
                                 />
                                 <button className="done-button" onClick={handleDrawingComplete} disabled={paths.length === 0}>Done! ✨</button>
                             </div>
+                        )}
+
+                        {/* RHYMING - same as pattern but with targetWord display */}
+                        {currentActivity.type === 'rhyming' && (
+                            <>
+                                <div className="word-display target-word">🎯 {currentActivity.targetWord}</div>
+                                <div className="options-grid">
+                                    {currentActivity.options.map((opt, i) => (
+                                        <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* SOUND - beginning sounds */}
+                        {currentActivity.type === 'sound' && (
+                            <>
+                                <div className="word-display target-word">🎵 {currentActivity.targetWord}</div>
+                                <div className="options-grid">
+                                    {currentActivity.options.map((opt, i) => (
+                                        <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* SOUND MATCH - which word is different */}
+                        {currentActivity.type === 'soundMatch' && (
+                            <div className="options-grid">
+                                {currentActivity.options.map((opt, i) => (
+                                    <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* PHONEME DELETE */}
+                        {currentActivity.type === 'phonemeDelete' && (
+                            <div className="options-grid">
+                                {currentActivity.options.map((opt, i) => (
+                                    <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* QUANTITY - comparison */}
+                        {currentActivity.type === 'quantity' && (
+                            <div className="options-grid">
+                                {currentActivity.options.map((opt, i) => (
+                                    <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* NUMBER PATTERN */}
+                        {currentActivity.type === 'numberPattern' && (
+                            <div className="options-grid">
+                                {currentActivity.options.map((opt, i) => (
+                                    <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* STROOP - Color-word interference */}
+                        {currentActivity.type === 'stroop' && (
+                            <>
+                                <div className="stroop-word" style={{ color: currentActivity.displayColor }}>
+                                    {currentActivity.word}
+                                </div>
+                                <p className="stroop-instruction">What COLOR is the text? (not what it says)</p>
+                                <div className="options-grid">
+                                    {currentActivity.options.map((opt, i) => (
+                                        <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* WORKING MEMORY - Digit span */}
+                        {(currentActivity.type === 'workingMemory' || currentActivity.type === 'workingMemoryBackward') && (
+                            <>
+                                <div className="memory-sequence">
+                                    {currentActivity.sequence.map((num, i) => (
+                                        <span key={i} className="memory-item">{num}</span>
+                                    ))}
+                                </div>
+                                {currentActivity.type === 'workingMemoryBackward' && (
+                                    <p className="memory-instruction">⬅️ Say them BACKWARDS!</p>
+                                )}
+                                <div className="options-grid">
+                                    {currentActivity.options.map((opt, i) => (
+                                        <button key={i} className="option-button sequence-option" onClick={() => handleAnswer(i)} disabled={showFeedback}>
+                                            {opt.join(' → ')}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* IMPULSE CONTROL - Go/No-Go */}
+                        {currentActivity.type === 'impulseControl' && (
+                            <ImpulseControlActivity
+                                activity={currentActivity}
+                                onComplete={(correctClicks) => {
+                                    const isCorrect = correctClicks === currentActivity.correctClicks
+                                    signalsRef.current.responses.push({
+                                        activityId: currentActivity.id,
+                                        type: 'impulseControl',
+                                        domain: currentActivity.domain,
+                                        correctClicks,
+                                        expected: currentActivity.correctClicks,
+                                        correct: isCorrect,
+                                        timestamp: new Date().toISOString()
+                                    })
+                                    setShowFeedback(isCorrect ? 'correct' : 'wrong')
+                                    setMascotMessage(isCorrect ? 'Great focus! 🎯' : 'Good try! Keep practicing! 💪')
+                                    setTimeout(() => {
+                                        setShowFeedback(null)
+                                        goToNext()
+                                    }, 1500)
+                                }}
+                            />
+                        )}
+
+                        {/* RAPID NAMING - Timed picture naming */}
+                        {currentActivity.type === 'rapidNaming' && (
+                            <div className="verbal-activity">
+                                <div className="rapid-naming-grid">
+                                    {currentActivity.images.map((img, i) => (
+                                        <span key={i} className="rapid-image">{img}</span>
+                                    ))}
+                                </div>
+                                <p className="verbal-instruction">{currentActivity.instruction}</p>
+                                {!isListening ? (
+                                    <button className="mic-button" onClick={startListening}>🎤 Start Naming</button>
+                                ) : (
+                                    <div className="listening-indicator">
+                                        <span className="pulse">🎤</span> Listening...
+                                    </div>
+                                )}
+                                {voiceResult && (
+                                    <div className="voice-result">
+                                        <p>You said: "{voiceResult}"</p>
+                                        <button className="done-button" onClick={submitVerbal}>Next ➡️</button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* MIRROR - Rotation/reflection */}
+                        {currentActivity.type === 'mirror' && (
+                            <div className="options-grid">
+                                {currentActivity.options.map((opt, i) => (
+                                    <button key={i} className="option-button emoji-option" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* INSTRUCTION - Following verbal instructions */}
+                        {currentActivity.type === 'instruction' && (
+                            <div className="instruction-activity">
+                                <p className="instruction-text">{currentActivity.instruction}</p>
+                                <button className="done-button" onClick={goToNext}>I did it! ✅</button>
+                            </div>
+                        )}
+
+                        {/* SUSTAINED ATTENTION - Count targets */}
+                        {currentActivity.type === 'sustainedAttention' && (
+                            <SustainedAttentionActivity
+                                activity={currentActivity}
+                                onComplete={(count) => {
+                                    const isCorrect = count === currentActivity.targetCount
+                                    signalsRef.current.responses.push({
+                                        activityId: currentActivity.id,
+                                        type: 'sustainedAttention',
+                                        domain: currentActivity.domain,
+                                        count,
+                                        expected: currentActivity.targetCount,
+                                        correct: isCorrect,
+                                        timestamp: new Date().toISOString()
+                                    })
+                                    setShowFeedback(isCorrect ? 'correct' : 'wrong')
+                                    setMascotMessage(isCorrect ? 'Perfect counting! 👀' : `You counted ${count}, but there were ${currentActivity.targetCount}!`)
+                                    setTimeout(() => {
+                                        setShowFeedback(null)
+                                        goToNext()
+                                    }, 1500)
+                                }}
+                            />
+                        )}
+
+                        {/* VISUAL MEMORY - Remember sequence */}
+                        {currentActivity.type === 'visualMemory' && (
+                            <VisualMemoryActivity
+                                activity={currentActivity}
+                                onComplete={(selectedIndex) => {
+                                    const isCorrect = selectedIndex === currentActivity.correct
+                                    handleAnswer(selectedIndex)
+                                }}
+                            />
                         )}
                     </>
                 )}

@@ -556,3 +556,300 @@
     font-size: 0.7rem;
     z-index: 100;
 }
+
+/* Tries Indicator */
+.tries-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0 16px;
+}
+
+.try-dot {
+    font-size: 1rem;
+    color: #4caf50;
+    transition: all 0.3s;
+}
+
+.try-dot.used {
+    color: #f44336;
+    transform: scale(1.2);
+}
+
+/* Stroop task styling */
+.stroop-word {
+    font-size: 3rem;
+    font-weight: 800;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 16px;
+    background: #f5f5f5;
+}
+
+/* Domain indicator */
+.domain-pill {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
+    background: rgba(103, 58, 183, 0.1);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: #5e35b1;
+    font-weight: 600;
+}
+
+/* ============ NEW ACTIVITY TYPES ============ */
+
+/* Impulse Control Activity */
+.impulse-activity {
+    cursor: pointer;
+    padding: 20px;
+    text-align: center;
+}
+
+.impulse-display {
+    width: 200px;
+    height: 200px;
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.2s;
+}
+
+.impulse-display.correct {
+    background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+    transform: scale(1.1);
+}
+
+.impulse-display.wrong {
+    background: linear-gradient(135deg, #e53935 0%, #ef5350 100%);
+    animation: shake 0.3s;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    75% {
+        transform: translateX(10px);
+    }
+}
+
+.impulse-item {
+    font-size: 5rem;
+    animation: popIn 0.3s;
+}
+
+.impulse-waiting {
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.impulse-instruction {
+    font-size: 1rem;
+    color: #666;
+    margin-top: 16px;
+}
+
+.impulse-score {
+    font-size: 0.9rem;
+    color: #888;
+    margin-top: 12px;
+}
+
+.impulse-complete {
+    font-size: 1.5rem;
+    color: #4caf50;
+    font-weight: 700;
+    padding: 40px;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Sustained Attention Activity */
+.sustained-activity {
+    text-align: center;
+    padding: 20px;
+}
+
+.sustained-display {
+    width: 200px;
+    height: 200px;
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f5f5f5;
+    border: 4px solid #ddd;
+}
+
+.sustained-target {
+    font-size: 5rem;
+    animation: popIn 0.3s;
+}
+
+.sustained-wait {
+    font-size: 4rem;
+    opacity: 0.5;
+}
+
+.sustained-complete {
+    text-align: center;
+}
+
+.count-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.count-button {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.count-button:hover {
+    transform: scale(1.1);
+}
+
+/* Visual Memory Activity */
+.visual-memory-show,
+.visual-memory-recall {
+    text-align: center;
+    padding: 20px;
+}
+
+.memory-sequence-display {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.memory-display-item {
+    font-size: 3rem;
+    animation: popIn 0.3s forwards;
+}
+
+/* Working Memory Digit Span */
+.memory-sequence {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.memory-item {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memory-instruction {
+    font-size: 1.1rem;
+    color: #e65100;
+    font-weight: 600;
+    margin: 10px 0;
+}
+
+.sequence-option {
+    font-size: 0.9rem !important;
+    padding: 12px 16px !important;
+}
+
+/* Stroop Task */
+.stroop-word {
+    font-size: 4rem;
+    font-weight: 800;
+    padding: 30px;
+    margin: 20px auto;
+    border-radius: 16px;
+    background: #f5f5f5;
+    max-width: 300px;
+}
+
+.stroop-instruction {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 16px;
+}
+
+/* Target Word Display */
+.target-word {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1a237e;
+    background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+    padding: 20px 40px;
+    border-radius: 16px;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+/* Rapid Naming Grid */
+.rapid-naming-grid {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.rapid-image {
+    font-size: 3rem;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 12px;
+}
+
+/* Instruction Activity */
+.instruction-activity {
+    text-align: center;
+    padding: 30px;
+}
+
+.instruction-text {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 20px;
+}

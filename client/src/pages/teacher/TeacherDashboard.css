@@ -751,3 +751,117 @@
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* Screening Results Card */
+.screening-results-card {
+    margin-top: 24px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+    border-radius: 12px;
+    border: 2px solid #3f51b5;
+}
+
+.screening-results-card h4 {
+    margin: 0 0 16px;
+    font-size: 1rem;
+    color: #1a237e;
+}
+
+.screening-priority {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.priority-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.priority-reason {
+    font-size: 0.85rem;
+    color: #333;
+}
+
+.domain-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.domain-item {
+    background: white;
+    border-radius: 8px;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+}
+
+.domain-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.domain-icon {
+    font-size: 1.2rem;
+}
+
+.domain-name {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.domain-status {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-typical {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-watch {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.status-screen {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.domain-details {
+    margin-top: 6px;
+    padding-left: 32px;
+}
+
+.domain-details small {
+    color: #666;
+    font-size: 0.75rem;
+}
+
+.concern-areas {
+    margin-top: 16px;
+    padding: 12px;
+    background: #fff3e0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #e65100;
+}
+
+.concern-areas strong {
+    color: #bf360c;
+}
