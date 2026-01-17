@@ -286,12 +286,14 @@ export function analyzeBaselineForAI(responses, behavioralData) {
             rationale += ' Elevated stress indicators observed.'
         }
     }
+    // Filter out 'unknown' domain - only include valid domains
+    const validDomains = [...concernDomains, ...watchDomains].filter(d => d !== 'unknown')
 
     return {
         overallRisk,
-        continueSession,
-        focusDomains: [...concernDomains, ...watchDomains],
-        additionalQuestions: Math.min(additionalQuestions, MAX_FOLLOWUP_QUESTIONS),
+        continueSession: validDomains.length > 0 ? continueSession : false,
+        focusDomains: validDomains,
+        additionalQuestions: validDomains.length > 0 ? Math.min(additionalQuestions, MAX_FOLLOWUP_QUESTIONS) : 0,
         rationale,
         domainStats,
         timestamp: new Date().toISOString()

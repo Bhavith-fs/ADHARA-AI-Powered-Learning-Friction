@@ -65,4 +65,4 @@ The environment adapts in real-time. By analyzing friction telemetry, ADHARA adj
    npm run dev
    ```
 
-<div align="center"> <sub>ADHARA © 2024 | Pioneering Early Intervention</sub> </div>
+<div align="center"> <sub>ADHARA © 2026 | Pioneering Early Intervention</sub> </div>
