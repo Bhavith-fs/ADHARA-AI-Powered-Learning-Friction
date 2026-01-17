@@ -195,88 +195,142 @@ function TeacherDashboard() {
         const faceAnalysis = summary.faceAnalysis || {}
         const baseline = deviations?.baseline || { label: 'Standard', mouse: { avgHesitationMs: 1800, avgCorrections: 2 } }
 
-        // Get learning friction observations
-        const frictionObservations = summary.disorderDetection || {}
+        // Get clinical context and AI analysis data
+        const clinicalContext = summary.clinicalContext || {}
+        const aiMidSession = summary.aiMidSessionAnalysis || {}
+        const sessionType = summary.sessionType || 'BASELINE_ONLY'
         const frictionLevel = summary.screeningPriority || { priority: 'LOW', reason: 'Session completed smoothly' }
 
-        // Format observations in educator-friendly language
-        const formatObservations = () => {
-            const observations = []
-            Object.entries(frictionObservations).forEach(([key, data]) => {
-                if (data.dataAvailable && data.overallStatus !== 'TYPICAL') {
-                    const friendlyNames = {
-                        dyslexia: 'Reading & Word Recognition',
-                        dyscalculia: 'Number & Counting',
-                        adhd: 'Focus & Attention',
-                        auditoryProcessing: 'Listening & Verbal',
-                        visualProcessing: 'Visual Pattern'
-                    }
-                    observations.push(`- ${data.icon} ${friendlyNames[key] || data.name}: Showed some hesitation or extra effort`)
-                }
+        // Placeholder for baseline question count, assuming 6 for now
+        const BASELINE_QUESTION_COUNT = 6;
+
+        // Format domain results for AI
+        const formatDomainResults = () => {
+            const results = []
+            Object.entries(clinicalContext.domainResults || {}).forEach(([key, data]) => {
+                results.push(`### ${data.icon} ${data.clinicalName} (${data.displayName})
+- Questions: ${data.totalQuestions} | Accuracy: ${data.accuracy}% | Avg Time: ${data.avgResponseTime}ms
+- Status: ${data.status} | Confidence: ${data.confidence}%
+- Patterns: ${data.patterns.length > 0 ? data.patterns.join('; ') : 'None detected'}`)
             })
-            return observations.length > 0 ? observations.join('\n') : 'Learning felt smooth across all observed areas.'
+            return results.join('\n\n')
         }
 
-        // Calculate overall friction level
-        const overallFriction = frictionLevel.priority === 'HIGH' ? 'Elevated' :
-            frictionLevel.priority === 'MEDIUM' ? 'Moderate' : 'Low'
+        // Determine if this is a concern case that needs clinical language
+        const isHighConcern = frictionLevel.priority === 'HIGH' || aiMidSession.overallRisk === 'CONCERN'
+        const isModerateWatch = frictionLevel.priority === 'MEDIUM' || aiMidSession.overallRisk === 'WATCH'
 
-        const prompt = `You are ADHARA, an AI-assisted early learning support system for educators.
+        const prompt = `You are ADHARA, an AI-powered early detection and learning support system. Generate a PROFESSIONAL screening report.
 
-🌟 YOUR NORTH STAR: "ADHARA helps educators notice when learning feels hard, so support can happen earlier."
-
-CRITICAL LANGUAGE RULES (FOLLOW STRICTLY):
-- NEVER use: diagnosis, disorder, disease, abnormal, clinical, deficit, impaired, accuracy, probability
-- ALWAYS use: learning friction, interaction patterns, early support, educator insight, observation, suggestion
-- Sound CALM, OBSERVATIONAL, SUPPORTIVE, and NON-ALARMING
-- This is NOT a medical or psychological tool
-- Never recommend professional evaluations or referrals
-- All suggestions should be educational, not medical
+🧠 SYSTEM CONTEXT:
+- This is a COMPETITION DEMONSTRATION requiring clinical-grade analysis
+- Session Type: ${sessionType} (${sessionType === 'ADAPTIVE' ? 'AI detected patterns and added targeted questions' : 'Baseline completed normally'})
+- AI Mid-Session Analysis: ${aiMidSession.rationale || 'N/A'}
+- Focus Domains Probed: ${aiMidSession.focusDomains?.join(', ') || 'All domains baseline'}
 
 ---
 
-## 🎒 SESSION OVERVIEW
-**Learner:** ${child.name || 'Student'} | **Age:** ${child.age || 'Unknown'} years
+## 📊 SCREENING DATA
 
-**What happened:**
-- Completed ${responses.length} learning activities
-- Got ${responses.filter(r => r.correct).length} right on first try
-- Took about ${Math.round((summary.avgResponseTime || 0) / 1000)}s average to respond
-- Showed ${faceAnalysis.dominantEmotion || 'calm'} demeanor throughout
+### Session Overview
+- **Learner:** ${child.name || 'Student'} | **Age:** ${child.age || 'Unknown'} years
+- **Total Questions:** ${responses.length} (Baseline: ${BASELINE_QUESTION_COUNT || 6}, Follow-up: ${responses.length - (BASELINE_QUESTION_COUNT || 6)})
+- **Overall Accuracy:** ${clinicalContext.overallAccuracy || 0}%
+- **Session Duration:** ${Math.round((summary.totalDurationMs || 0) / 1000)}s
 
-**Interaction patterns observed:**
-- Hesitation moments: ${summary.hesitationCount || 0}
-- Corrections needed: ${summary.totalCorrections || 0}
-- Engagement level: ${(faceAnalysis.gazeOnScreenPercent || 80)}% focused on screen
+### Behavioral Indicators
+- **Response Time:** ${summary.avgResponseTime || 0}ms average
+- **Hesitation Events:** ${summary.hesitationCount || 0}
+- **Self-Corrections:** ${summary.totalCorrections || 0}
+- **Stress Indicators:** ${summary.stressIndicatorCount || 0}
+- **Emotional State:** ${faceAnalysis.dominantEmotion || 'neutral'} (${Math.round((faceAnalysis.stressRatio || 0) * 100)}% stress ratio)
+- **Visual Attention:** ${faceAnalysis.gazeOnScreenPercent || 0}% on-screen
 
-**Areas where extra effort was noticed:**
-${formatObservations()}
+### Domain-by-Domain Analysis
+${formatDomainResults()}
+
+---
+
+## ANALYSIS REQUIREMENTS
+
+${isHighConcern ? `
+⚠️ HIGH CONCERN DETECTED - Include clinical terminology:
+- "Early indicators consistent with [specific pattern]"
+- "Patterns warrant professional educational assessment"
+- Mention specific learning difficulty indicators if patterns match (e.g., "phonological processing differences consistent with early dyslexia patterns")
+` : isModerateWatch ? `
+📋 MODERATE PATTERNS - Be specific but supportive:
+- "Some patterns observed that may benefit from monitoring"
+- Suggest specific classroom accommodations
+- Recommend follow-up screening in 2-4 weeks
+` : `
+✅ TYPICAL PATTERNS - Be encouraging:
+- Confirm session went smoothly
+- Note any minor observations
+- Emphasize strengths observed
+`}
 
 ---
 
-Generate a CALM, SUPPORTIVE learning summary using this EXACT format:
+Generate a PROFESSIONAL SCREENING REPORT with this EXACT format:
 
-# 🌱 ADHARA Learning Session Summary
+# 🔬 ADHARA Clinical Screening Report
 
-## Overall Learning Friction Level
-**${overallFriction}**
+## Executive Summary
+**Overall Risk Level: ${frictionLevel.priority}**
+**Confidence: ${Math.round((Object.values(clinicalContext.domainResults || {}).reduce((sum, d) => sum + (d.confidence || 0), 0) / Math.max(Object.keys(clinicalContext.domainResults || {}).length, 1)))}%**
 
-## What Was Observed
-[2-3 calm sentences describing what you noticed during this session. Focus on behavior, not judgment. Use phrases like "The learner showed...", "There were moments of...", "Interaction patterns suggest..."]
+[2-3 sentences summarizing the key findings. Be direct. If concerns exist, name them specifically.]
 
-## What This May Mean
-[1-2 supportive sentences. Use phrases like "These patterns suggest learning may have felt...", "This is common when...", "This may indicate that...". NEVER sound alarming.]
+## 📈 Domain Analysis
 
-## Suggested Next Steps for Educators
-1. [A simple, actionable classroom adjustment - like shorter tasks, more breaks, different format]
-2. [A supportive strategy - like pairing with a buddy, adding visual guides, giving extra time]
-3. [An observation suggestion - like "notice if this pattern continues across sessions"]
+### Phonological Processing (Reading/Dyslexia Indicators)
+- **Status:** [TYPICAL / WATCH / ELEVATED]
+- **Observed Patterns:** [Specific patterns from data]
+- **Clinical Notes:** [If elevated: "Early indicators consistent with..." otherwise "Within expected range"]
 
-## 💚 Educator Note
-[One warm, encouraging sentence for the teacher. Remind them this is about early support, not labels.]
+### Numerical Cognition (Math/Dyscalculia Indicators)
+- **Status:** [TYPICAL / WATCH / ELEVATED]
+- **Observed Patterns:** [Specific patterns from data]
+- **Clinical Notes:** [If elevated: specific notes]
+
+### Executive Function (Attention/Focus Indicators)
+- **Status:** [TYPICAL / WATCH / ELEVATED]
+- **Observed Patterns:** [Specific patterns from data]
+- **Clinical Notes:** [If elevated: specific notes]
+
+### Visual-Spatial Processing
+- **Status:** [TYPICAL / WATCH / ELEVATED]
+- **Observed Patterns:** [Specific patterns from data]
+
+### Auditory Processing
+- **Status:** [TYPICAL / WATCH / ELEVATED]
+- **Observed Patterns:** [Specific patterns from data]
+
+## 🎯 Recommendations
+
+### Immediate Classroom Accommodations
+1. [Specific, actionable recommendation based on highest concern domain]
+2. [Second specific recommendation]
+3. [Third recommendation if needed]
+
+### Monitoring Plan
+- [Frequency of re-screening recommended]
+- [Specific behaviors to monitor]
+
+${isHighConcern ? `
+### ⚠️ Professional Referral Advisory
+Based on the patterns observed, this learner would benefit from:
+- [Specific professional assessment recommended]
+- [Educational psychologist / learning specialist evaluation]
+
+**Note:** These patterns are early indicators, not diagnoses. Professional evaluation is recommended to confirm and develop targeted intervention strategies.
+` : ''}
 
 ---
-*This is an early learning support signal, not a diagnosis. ADHARA helps notice when learning feels hard, so support can happen earlier.*`
+📋 **Screening Notice:** This report identifies behavioral learning patterns for early intervention purposes. All findings are observations that support educator awareness, not medical diagnoses.
+
+*Generated by ADHARA AI • Session: ${sessionType} • Confidence: ${Math.round((Object.values(clinicalContext.domainResults || {}).reduce((sum, d) => sum + (d.confidence || 0), 0) / Math.max(Object.keys(clinicalContext.domainResults || {}).length, 1)))}%*`
 
 
         try {

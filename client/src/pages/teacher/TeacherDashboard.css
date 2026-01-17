@@ -2,152 +2,184 @@
 
 .teacher-dashboard-v2 {
     min-height: 100vh;
-    background: #f0f2f5;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Header */
+/* Header - Enhanced */
 .dash-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 24px;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+    padding: 16px 28px;
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .header-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
 .brand-icon {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .header-brand h1 {
     margin: 0;
-    font-size: 1.3rem;
-    font-weight: 600;
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #fff 0%, #a8e6cf 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .status-dot {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    margin-left: 8px;
+    margin-left: 10px;
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
 }
 
 .status-dot.online {
-    background: #4caf50;
-    box-shadow: 0 0 6px #4caf50;
+    background: #00e676;
+    box-shadow: 0 0 10px #00e676, 0 0 20px rgba(0, 230, 118, 0.3);
 }
 
 .status-dot.offline {
-    background: #f44336;
+    background: #ff5252;
+    box-shadow: 0 0 8px #ff5252;
 }
 
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
 }
 
 .toggle-auto {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 0.85rem;
     cursor: pointer;
+    opacity: 0.9;
 }
 
 .toggle-auto input {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+    accent-color: #00e676;
 }
 
 .btn-refresh,
 .btn-logout {
-    padding: 8px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
     color: white;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.85rem;
-    transition: all 0.2s;
+    font-weight: 500;
+    transition: all 0.25s;
 }
 
 .btn-refresh:hover,
 .btn-logout:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Layout */
 .dash-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
-    min-height: calc(100vh - 56px);
+    grid-template-columns: 300px 1fr;
+    min-height: calc(100vh - 64px);
 }
 
-/* Sidebar */
+/* Sidebar - Enhanced */
 .student-sidebar {
-    background: white;
-    border-right: 1px solid #e0e0e0;
-    padding: 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 24px 20px;
     overflow-y: auto;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.04);
 }
 
 .student-sidebar h2 {
-    margin: 0 0 16px;
-    font-size: 0.9rem;
-    color: #666;
+    margin: 0 0 18px;
+    font-size: 0.8rem;
+    color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    font-weight: 600;
 }
 
 .student-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .student-card {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: #f8f9fa;
+    gap: 14px;
+    padding: 14px 16px;
+    background: white;
     border: 2px solid transparent;
-    border-radius: 10px;
+    border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
     text-align: left;
     width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .student-card:hover {
-    background: #f0f4ff;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+    transform: translateX(4px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .student-card.active {
-    border-color: #1e3a5f;
-    background: #e8f0fe;
+    border-color: #2c5364;
+    background: linear-gradient(135deg, #e8f4fd 0%, #dbeafe 100%);
+    box-shadow: 0 4px 20px rgba(44, 83, 100, 0.15);
 }
 
 .student-avatar {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
 }
 
 .student-info {
@@ -158,38 +190,42 @@
 .student-name {
     display: block;
     font-weight: 600;
-    color: #333;
+    color: #1e293b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.95rem;
 }
 
 .student-meta {
     display: block;
     font-size: 0.75rem;
-    color: #888;
+    color: #64748b;
+    margin-top: 2px;
 }
 
 .score-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
     font-weight: 700;
+    min-width: 48px;
+    text-align: center;
 }
 
 .score-badge.good {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
 }
 
 .score-badge.ok {
-    background: #fff3e0;
-    color: #f57c00;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    color: #856404;
 }
 
 .score-badge.low {
-    background: #ffebee;
-    color: #c62828;
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
 }
 
 .no-students {

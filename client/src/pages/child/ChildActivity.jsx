@@ -1,7 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadFaceModels, analyzeFace, FaceAnalysisSession } from '../../utils/faceAnalysis'
-import { generateAdaptiveSession, getFollowUpActivities, generateScreeningContext } from '../../utils/questionGenerator'
+import {
+    generateBaselineSession,
+    generateFollowUpQuestions,
+    analyzeBaselineForAI,
+    generateClinicalContext,
+    MAX_TRIES,
+    BASELINE_QUESTION_COUNT
+} from '../../utils/questionGenerator'
 import { analyzeSession, getScreeningPriority, generateDetectionSummary } from '../../utils/disorderDetection'
 import './ChildActivity.css'
 
@@ -304,11 +311,13 @@ function ChildActivity() {
     // Sequence activity state
     const [selectedSequence, setSelectedSequence] = useState([])
 
-    // Dynamic screening activities (generated based on age)
+    // Adaptive session state
     const [activities, setActivities] = useState([])
-    const [screeningMode, setScreeningMode] = useState(true)
+    const [sessionPhase, setSessionPhase] = useState('baseline') // 'baseline' | 'analyzing' | 'followup' | 'complete'
+    const [aiAnalysis, setAiAnalysis] = useState(null)
+    const [baselineComplete, setBaselineComplete] = useState(false)
 
-    // Load child data and initialize tracking
+    // Load child data and initialize with BASELINE questions only
     useEffect(() => {
         const stored = localStorage.getItem('adhara_child')
         if (stored) {
@@ -317,11 +326,11 @@ function ChildActivity() {
             setMascotMessage(`Hi ${data.name}! ${MASCOT_MESSAGES.screening[0]}`)
             signalsRef.current.startTime = data.sessionId || Date.now()
 
-            // Generate adaptive screening session based on child's age
-            const age = parseInt(data.age) || 8
-            const screeningActivities = generateAdaptiveSession(age, null)
-            setActivities(screeningActivities)
-            console.log(`Generated ${screeningActivities.length} screening activities for age ${age}`)
+            // Start with BASELINE questions only (5-7 questions)
+            const baselineActivities = generateBaselineSession()
+            setActivities(baselineActivities)
+            setSessionPhase('baseline')
+            console.log(`🧠 ADHARA: Starting with ${baselineActivities.length} baseline questions`)
         }
 
         localStorage.removeItem('adhara_session_complete')
@@ -329,8 +338,13 @@ function ChildActivity() {
         // Initialize camera
         initCamera()
 
-        // Initialize enhanced speech recognition (continuous)
+        // Initialize enhanced speech recognition and auto-start recording
         initEnhancedSpeechRecognition()
+
+        // Auto-start continuous recording after a short delay
+        setTimeout(() => {
+            startContinuousRecording()
+        }, 2000)
 
         return () => {
             if (streamRef.current) {
@@ -724,6 +738,12 @@ function ChildActivity() {
     // Start continuous recording
     const startContinuousRecording = () => {
         if (recognitionRef.current && !isContinuousRecording) {
+            // Prevent double-start
+            if (speechAnalysisRef.current.isRecording) {
+                console.log('🎤 Already recording, skipping start')
+                return
+            }
+
             setIsContinuousRecording(true)
             setIsListening(true)
             speechAnalysisRef.current.sessionStartTime = Date.now()
@@ -733,7 +753,9 @@ function ChildActivity() {
                 recognitionRef.current.start()
                 console.log('🎤 Continuous recording started')
             } catch (e) {
-                console.log('Speech start error:', e)
+                console.log('Speech start error:', e.message)
+                // Reset state if start failed
+                speechAnalysisRef.current.isRecording = false
             }
         }
     }
@@ -919,12 +941,58 @@ function ChildActivity() {
     }, [currentActivity, activityStartTime, childData, currentTries])
 
     const goToNext = () => {
-        if (currentIndex < activities.length - 1) {
-            setCurrentIndex(prev => prev + 1)
+        const nextIndex = currentIndex + 1
+
+        // Check if we just finished baseline phase and need AI analysis
+        if (sessionPhase === 'baseline' && nextIndex >= activities.length) {
+            console.log('🧠 ADHARA: Baseline complete, running AI analysis...')
+            setSessionPhase('analyzing')
+            setMascotMessage("Let me think about what we've learned... 🤔")
+
+            // Collect behavioral data
+            const behavioralData = {
+                stressRatio: signalsRef.current.stressIndicators.length / Math.max(signalsRef.current.responses.length, 1),
+                hesitationCount: signalsRef.current.hesitations?.length || 0,
+                totalCorrections: signalsRef.current.corrections || 0
+            }
+
+            // Run AI analysis on baseline responses
+            const aiRecommendation = analyzeBaselineForAI(signalsRef.current.responses, behavioralData)
+            setAiAnalysis(aiRecommendation)
+            console.log('🧠 AI Recommendation:', aiRecommendation)
+
+            // If AI recommends follow-up questions, add them
+            if (aiRecommendation.continueSession && aiRecommendation.additionalQuestions > 0) {
+                const followUpQuestions = generateFollowUpQuestions(aiRecommendation)
+                console.log(`🧠 Adding ${followUpQuestions.length} follow-up questions for: ${aiRecommendation.focusDomains.join(', ')}`)
+
+                setTimeout(() => {
+                    setActivities(prev => [...prev, ...followUpQuestions])
+                    setCurrentIndex(nextIndex)
+                    setActivityStartTime(Date.now())
+                    setSelectedSequence([])
+                    setVoiceResult('')
+                    setCurrentTries(0)
+                    setSessionPhase('followup')
+                    setMascotMessage(`Let's try a few more activities in ${aiRecommendation.focusDomains.join(' and ')}! 🎯`)
+                }, 2000) // Show "thinking" message for 2 seconds
+            } else {
+                // No follow-up needed, session complete
+                console.log('🧠 No follow-up needed, session complete!')
+                setTimeout(() => {
+                    handleComplete()
+                }, 1500)
+            }
+            return
+        }
+
+        // Normal progression to next question
+        if (nextIndex < activities.length) {
+            setCurrentIndex(nextIndex)
             setActivityStartTime(Date.now())
             setSelectedSequence([])
             setVoiceResult('')
-            setCurrentTries(0) // Reset tries for new question
+            setCurrentTries(0)
             setMascotMessage(MASCOT_MESSAGES.next[Math.floor(Math.random() * MASCOT_MESSAGES.next.length)])
         } else {
             handleComplete()
@@ -1026,15 +1094,27 @@ function ChildActivity() {
 
         const disorderAnalysis = analyzeSession(sessionForAnalysis, childData?.age || 8)
         const screeningPriority = getScreeningPriority(disorderAnalysis)
-        const screeningContext = generateScreeningContext(activities, signalsRef.current.responses)
 
+        // Generate clinical context with all data including mid-session AI analysis
+        const clinicalContext = generateClinicalContext(
+            signalsRef.current.responses,
+            aiAnalysis, // Include the mid-session AI recommendation
+            {
+                stressRatio: faceAnalysisSummary.stressRatio,
+                hesitationCount: signalsRef.current.hesitationEvents.length,
+                totalCorrections: signalsRef.current.corrections
+            }
+        )
+
+        console.log('🧠 Final Clinical Context:', clinicalContext)
         console.log('Disorder Detection Analysis:', disorderAnalysis)
         console.log('Screening Priority:', screeningPriority)
 
         const finalSignals = {
             ...signalsRef.current,
             childData,
-            activities, // Include the activities used
+            activities,
+            sessionPhase, // Include session phase info
             completedAt: new Date().toISOString(),
             totalDurationMs: Date.now() - signalsRef.current.startTime,
             summary: {
@@ -1068,10 +1148,13 @@ function ChildActivity() {
                     stressRatio: faceAnalysisSummary.stressRatio,
                     recentEmotions: faceAnalysisSummary.recentEmotions
                 },
-                // NEW: Disorder detection results
+                // Disorder detection results
                 disorderDetection: disorderAnalysis,
                 screeningPriority: screeningPriority,
-                screeningContext: screeningContext
+                // NEW: Clinical context with mid-session AI analysis
+                clinicalContext: clinicalContext,
+                aiMidSessionAnalysis: aiAnalysis,
+                sessionType: aiAnalysis?.continueSession ? 'ADAPTIVE' : 'BASELINE_ONLY'
             }
         }
 
@@ -1165,15 +1248,12 @@ function ChildActivity() {
                 {signalsRef.current.stressIndicators.length > 0 ? ' ⚠️' : ' ✅'}
             </div>
 
-            {/* Continuous recording toggle */}
-            <div className="recording-controls">
-                <button
-                    className={`record-toggle ${isContinuousRecording ? 'recording' : ''}`}
-                    onClick={isContinuousRecording ? stopContinuousRecording : startContinuousRecording}
-                >
-                    {isContinuousRecording ? '🔴 Stop Recording' : '⚪ Start Voice Recording'}
-                </button>
-            </div>
+            {/* Recording indicator (auto-started, no button needed) */}
+            {isContinuousRecording && (
+                <div className="recording-indicator">
+                    <span className="recording-dot">●</span> Recording
+                </div>
+            )}
 
             {/* Mascot */}
             <div className="activity-mascot">
@@ -1207,7 +1287,9 @@ function ChildActivity() {
                         {/* COUNTING */}
                         {currentActivity.type === 'counting' && (
                             <>
-                                <div className="counting-display">{renderStars(currentActivity.count)}</div>
+                                <div className="counting-display">
+                                    {currentActivity.displayItems || renderStars(currentActivity.count)}
+                                </div>
                                 <div className="options-grid">
                                     {currentActivity.options.map((opt, i) => (
                                         <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>
@@ -1431,8 +1513,8 @@ function ChildActivity() {
                                 )}
                                 <div className="options-grid">
                                     {currentActivity.options.map((opt, i) => (
-                                        <button key={i} className="option-button sequence-option" onClick={() => handleAnswer(i)} disabled={showFeedback}>
-                                            {opt.join(' → ')}
+                                        <button key={i} className="option-button sequence-option" onClick={() => handleAnswer(opt)} disabled={showFeedback}>
+                                            {typeof opt === 'string' ? opt : opt.join(' → ')}
                                         </button>
                                     ))}
                                 </div>

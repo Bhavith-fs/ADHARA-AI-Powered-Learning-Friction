@@ -1,209 +1,423 @@
 /**
- * ADHARA Learning Activities - Simplified & Tested v3.0
+ * ADHARA Adaptive Question System v4.0
  * 
- * Only includes activity types that are fully tested and child-friendly.
- * Removed complex types (impulseControl, sustainedAttention, visualMemory) that had bugs.
+ * Features:
+ * - PHASE 1: 5-7 baseline questions (1-2 per domain)
+ * - Mid-session AI analysis to detect patterns
+ * - PHASE 2: 0-8 targeted follow-up questions (only if concerns detected)
+ * - Maximum 15 questions total
+ * - Early termination for normal learners
  * 
- * Working activity types:
- * - letter (letter recognition)
- * - rhyming (find the rhyme)  
- * - sound (beginning sounds)
- * - counting (count objects)
- * - math (simple arithmetic)
- * - pattern (visual patterns)
- * - matching (find the different one)
- * - quantity (which has more)
- * - sequence (order numbers)
- * - soundMatch (which sounds different)
- * - verbal (speak words - requires mic)
+ * Session Flow:
+ * 1. Baseline questions → Collect initial data
+ * 2. AI Analysis → Determine focus areas
+ * 3. Follow-up (if needed) → Deep probe problem areas
+ * 4. Final Analysis → Generate clinical report
  */
 
 export const MAX_TRIES = 3
+export const BASELINE_QUESTION_COUNT = 6  // 5-7 baseline
+export const MAX_FOLLOWUP_QUESTIONS = 8   // Maximum additional questions
+export const MAX_TOTAL_QUESTIONS = 15     // Hard cap
 
-export const SCREENING_ACTIVITIES = {
-    // ============ READING & WORDS ============
-    dyslexia: {
-        domain: 'Reading & Words',
+// ============ QUESTION POOLS BY DOMAIN ============
+
+export const QUESTION_POOLS = {
+    // ============ READING & WORDS (Dyslexia Indicators) ============
+    reading: {
+        domain: 'reading',
+        displayName: 'Reading & Words',
+        clinicalName: 'Phonological Processing',
         icon: '📖',
-        activities: [
-            // Letter Recognition (clear, simple)
-            { id: 'letter_b', type: 'letter', category: 'letterRecognition', difficulty: 1, question: "Which letter is this?", showLetter: 'b', options: ['b', 'd', 'p', 'q'], correct: 'b' },
-            { id: 'letter_d', type: 'letter', category: 'letterRecognition', difficulty: 1, question: "Which letter is this?", showLetter: 'd', options: ['b', 'd', 'p', 'q'], correct: 'd' },
-            { id: 'letter_p', type: 'letter', category: 'letterRecognition', difficulty: 1, question: "Which letter is this?", showLetter: 'p', options: ['b', 'd', 'p', 'q'], correct: 'p' },
-            { id: 'letter_m', type: 'letter', category: 'letterRecognition', difficulty: 1, question: "Which letter is this?", showLetter: 'm', options: ['m', 'n', 'u', 'w'], correct: 'm' },
-            { id: 'letter_w', type: 'letter', category: 'letterRecognition', difficulty: 2, question: "Which letter is this?", showLetter: 'w', options: ['m', 'n', 'u', 'w'], correct: 'w' },
-
-            // Rhyming (simple, clear rhymes)
-            { id: 'rhyme_cat', type: 'rhyming', category: 'rhyming', difficulty: 1, question: "Which word rhymes with CAT? 🐱", targetWord: 'CAT', options: ['HAT', 'DOG', 'CUP', 'SUN'], correct: 'HAT' },
-            { id: 'rhyme_ball', type: 'rhyming', category: 'rhyming', difficulty: 1, question: "Which word rhymes with BALL? ⚽", targetWord: 'BALL', options: ['TALL', 'BOOK', 'BIRD', 'MILK'], correct: 'TALL' },
-            { id: 'rhyme_tree', type: 'rhyming', category: 'rhyming', difficulty: 1, question: "Which word rhymes with TREE? 🌳", targetWord: 'TREE', options: ['BEE', 'CAR', 'DOG', 'TOY'], correct: 'BEE' },
-            { id: 'rhyme_cake', type: 'rhyming', category: 'rhyming', difficulty: 2, question: "Which word rhymes with CAKE? 🎂", targetWord: 'CAKE', options: ['LAKE', 'COOK', 'CALL', 'COLD'], correct: 'LAKE' },
-
-            // Beginning Sounds (simple matching)
-            { id: 'sound_sun', type: 'sound', category: 'sounds', difficulty: 1, question: "Which word starts like SUN? ☀️", targetWord: 'SUN', options: ['SOCK', 'MOON', 'BALL', 'CAR'], correct: 'SOCK' },
-            { id: 'sound_ball', type: 'sound', category: 'sounds', difficulty: 1, question: "Which word starts like BALL? ⚽", targetWord: 'BALL', options: ['BAT', 'CAT', 'DOG', 'FISH'], correct: 'BAT' },
-            { id: 'sound_fish', type: 'sound', category: 'sounds', difficulty: 1, question: "Which word starts like FISH? 🐟", targetWord: 'FISH', options: ['FORK', 'HAT', 'TREE', 'LAMP'], correct: 'FORK' }
+        baseline: [
+            { id: 'base_letter_b', type: 'letter', difficulty: 1, question: "Which letter is this?", showLetter: 'b', options: ['b', 'd', 'p', 'q'], correct: 'b' },
+            { id: 'base_rhyme_cat', type: 'rhyming', difficulty: 1, question: "Which word rhymes with CAT?", targetWord: 'CAT', options: ['HAT', 'DOG', 'CUP', 'SUN'], correct: 'HAT' }
+        ],
+        followUp: [
+            { id: 'fu_letter_d', type: 'letter', difficulty: 1, question: "Which letter is this?", showLetter: 'd', options: ['b', 'd', 'p', 'q'], correct: 'd' },
+            { id: 'fu_letter_p', type: 'letter', difficulty: 1, question: "Which letter is this?", showLetter: 'p', options: ['b', 'd', 'p', 'q'], correct: 'p' },
+            { id: 'fu_rhyme_ball', type: 'rhyming', difficulty: 1, question: "Which word rhymes with BALL?", targetWord: 'BALL', options: ['TALL', 'BOOK', 'BIRD', 'MILK'], correct: 'TALL' },
+            { id: 'fu_rhyme_tree', type: 'rhyming', difficulty: 1, question: "Which word rhymes with TREE?", targetWord: 'TREE', options: ['BEE', 'CAR', 'DOG', 'TOY'], correct: 'BEE' },
+            { id: 'fu_sound_sun', type: 'sound', difficulty: 1, question: "Which word starts like SUN?", targetWord: 'SUN', options: ['SOCK', 'MOON', 'BALL', 'CAR'], correct: 'SOCK' },
+            { id: 'fu_sound_ball', type: 'sound', difficulty: 1, question: "Which word starts like BALL?", targetWord: 'BALL', options: ['BAT', 'CAT', 'DOG', 'FISH'], correct: 'BAT' }
         ]
     },
 
-    // ============ NUMBERS & COUNTING ============
-    dyscalculia: {
-        domain: 'Numbers & Counting',
+    // ============ NUMBERS & COUNTING (Dyscalculia Indicators) ============
+    math: {
+        domain: 'math',
+        displayName: 'Numbers & Counting',
+        clinicalName: 'Numerical Cognition',
         icon: '🔢',
-        activities: [
-            // Simple Counting (actual visual items)
-            { id: 'count_4', type: 'counting', category: 'counting', difficulty: 1, question: "How many stars? ⭐⭐⭐⭐", count: 4, options: [3, 4, 5, 6], correct: 4 },
-            { id: 'count_5', type: 'counting', category: 'counting', difficulty: 1, question: "How many hearts? ❤️❤️❤️❤️❤️", count: 5, options: [4, 5, 6, 7], correct: 5 },
-            { id: 'count_6', type: 'counting', category: 'counting', difficulty: 1, question: "How many circles? 🔵🔵🔵🔵🔵🔵", count: 6, options: [5, 6, 7, 8], correct: 6 },
-            { id: 'count_3', type: 'counting', category: 'counting', difficulty: 1, question: "How many apples? 🍎🍎🍎", count: 3, options: [2, 3, 4, 5], correct: 3 },
-
-            // Simple Math
-            { id: 'add_2_3', type: 'math', category: 'math', difficulty: 1, question: "What is 2 + 3?", options: [4, 5, 6, 7], correct: 5 },
-            { id: 'add_4_2', type: 'math', category: 'math', difficulty: 1, question: "What is 4 + 2?", options: [5, 6, 7, 8], correct: 6 },
-            { id: 'add_3_3', type: 'math', category: 'math', difficulty: 1, question: "What is 3 + 3?", options: [4, 5, 6, 7], correct: 6 },
-            { id: 'sub_5_2', type: 'math', category: 'math', difficulty: 1, question: "What is 5 - 2?", options: [2, 3, 4, 5], correct: 3 },
-            { id: 'add_7_5', type: 'math', category: 'math', difficulty: 2, question: "What is 7 + 5?", options: [10, 11, 12, 13], correct: 12 },
-
-            // Which has MORE (simple visual comparison)
-            { id: 'qty_1', type: 'quantity', category: 'quantity', difficulty: 1, question: "Which group has MORE?", options: ['🟢🟢🟢🟢🟢 (5)', '🔵🔵🔵 (3)'], correct: '🟢🟢🟢🟢🟢 (5)' },
-            { id: 'qty_2', type: 'quantity', category: 'quantity', difficulty: 1, question: "Which group has MORE?", options: ['⭐⭐⭐⭐ (4)', '🌙🌙🌙🌙🌙🌙 (6)'], correct: '🌙🌙🌙🌙🌙🌙 (6)' },
-
-            // Simple Number Order
-            { id: 'seq_1', type: 'sequence', category: 'numberOrder', difficulty: 1, question: "Put in order (smallest to biggest):", items: [5, 2, 8, 1], correct: [1, 2, 5, 8] },
-            { id: 'seq_2', type: 'sequence', category: 'numberOrder', difficulty: 1, question: "Put in order (smallest to biggest):", items: [9, 3, 6, 1], correct: [1, 3, 6, 9] }
+        baseline: [
+            { id: 'base_count_4', type: 'counting', difficulty: 1, question: "How many stars?", displayItems: '⭐⭐⭐⭐', count: 4, options: [3, 4, 5, 6], correct: 4 },
+            { id: 'base_add_2_3', type: 'math', difficulty: 1, question: "What is 2 + 3?", options: [4, 5, 6, 7], correct: 5 }
+        ],
+        followUp: [
+            { id: 'fu_count_5', type: 'counting', difficulty: 1, question: "How many hearts?", displayItems: '❤️❤️❤️❤️❤️', count: 5, options: [4, 5, 6, 7], correct: 5 },
+            { id: 'fu_count_6', type: 'counting', difficulty: 1, question: "How many circles?", displayItems: '🔵🔵🔵🔵🔵🔵', count: 6, options: [5, 6, 7, 8], correct: 6 },
+            { id: 'fu_add_4_2', type: 'math', difficulty: 1, question: "What is 4 + 2?", options: [5, 6, 7, 8], correct: 6 },
+            { id: 'fu_sub_5_2', type: 'math', difficulty: 1, question: "What is 5 - 2?", options: [2, 3, 4, 5], correct: 3 },
+            { id: 'fu_qty_1', type: 'quantity', difficulty: 1, question: "Which group has MORE?", options: ['🟢🟢🟢🟢🟢 (5)', '🔵🔵🔵 (3)'], correct: '🟢🟢🟢🟢🟢 (5)' },
+            { id: 'fu_seq_1', type: 'pattern', difficulty: 1, question: "What comes next? 2, 4, 6, ?", options: [7, 8, 9, 10], correct: 8 }
         ]
     },
 
-    // ============ FOCUS & ATTENTION ============
-    adhd: {
-        domain: 'Focus & Attention',
+    // ============ FOCUS & ATTENTION (ADHD Indicators) ============
+    attention: {
+        domain: 'attention',
+        displayName: 'Focus & Attention',
+        clinicalName: 'Executive Function',
         icon: '🧠',
-        activities: [
-            // Working Memory (remember sequence - simple)
-            { id: 'mem_3', type: 'workingMemory', category: 'memory', difficulty: 1, question: "Remember this order: 3, 7, 2", sequence: [3, 7, 2], options: [[3, 7, 2], [7, 3, 2], [2, 7, 3], [3, 2, 7]], correct: 0 },
-            { id: 'mem_4', type: 'workingMemory', category: 'memory', difficulty: 1, question: "Remember this order: 5, 1, 9", sequence: [5, 1, 9], options: [[5, 1, 9], [1, 5, 9], [9, 1, 5], [5, 9, 1]], correct: 0 },
-            { id: 'mem_5', type: 'workingMemory', category: 'memory', difficulty: 2, question: "Remember this order: 4, 1, 8, 5", sequence: [4, 1, 8, 5], options: [[4, 1, 8, 5], [1, 4, 8, 5], [4, 8, 1, 5], [5, 8, 1, 4]], correct: 0 },
-
-            // Stroop (color naming - simple)
-            { id: 'stroop_1', type: 'stroop', category: 'attention', difficulty: 2, question: "What COLOR is this word? (not what it says!)", word: 'BLUE', displayColor: 'red', options: ['Blue', 'Red', 'Green', 'Yellow'], correct: 'Red' },
-            { id: 'stroop_2', type: 'stroop', category: 'attention', difficulty: 2, question: "What COLOR is this word?", word: 'GREEN', displayColor: 'yellow', options: ['Blue', 'Red', 'Green', 'Yellow'], correct: 'Yellow' }
+        baseline: [
+            { id: 'base_mem_3', type: 'workingMemory', difficulty: 1, question: "Remember this order: 3, 7, 2", sequence: [3, 7, 2], options: ['3, 7, 2', '7, 3, 2', '2, 7, 3', '3, 2, 7'], correct: '3, 7, 2' }
+        ],
+        followUp: [
+            { id: 'fu_mem_4', type: 'workingMemory', difficulty: 1, question: "Remember this order: 5, 1, 9", sequence: [5, 1, 9], options: ['5, 1, 9', '1, 5, 9', '9, 1, 5', '5, 9, 1'], correct: '5, 1, 9' },
+            { id: 'fu_mem_5', type: 'workingMemory', difficulty: 2, question: "Remember: 4, 1, 8, 5", sequence: [4, 1, 8, 5], options: ['4, 1, 8, 5', '1, 4, 8, 5', '4, 8, 1, 5', '5, 8, 1, 4'], correct: '4, 1, 8, 5' },
+            { id: 'fu_stroop_1', type: 'stroop', difficulty: 2, question: "What COLOR is this word? (not what it says!)", word: 'BLUE', displayColor: 'red', options: ['Blue', 'Red', 'Green', 'Yellow'], correct: 'Red' },
+            { id: 'fu_stroop_2', type: 'stroop', difficulty: 2, question: "What COLOR is this word?", word: 'GREEN', displayColor: 'yellow', options: ['Blue', 'Red', 'Green', 'Yellow'], correct: 'Yellow' }
         ]
     },
 
-    // ============ LISTENING & SPEAKING ============
-    auditory: {
-        domain: 'Listening & Speaking',
-        icon: '👂',
-        activities: [
-            // Which sounds different
-            { id: 'sound_diff_1', type: 'soundMatch', category: 'listening', difficulty: 1, question: "Which word sounds DIFFERENT?", options: ['CAT', 'BAT', 'HAT', 'BALL'], correct: 'BALL' },
-            { id: 'sound_diff_2', type: 'soundMatch', category: 'listening', difficulty: 1, question: "Which word sounds DIFFERENT?", options: ['PEN', 'TEN', 'HEN', 'DOG'], correct: 'DOG' },
-            { id: 'sound_diff_3', type: 'soundMatch', category: 'listening', difficulty: 1, question: "Which word sounds DIFFERENT?", options: ['CAKE', 'LAKE', 'CAR', 'MAKE'], correct: 'CAR' },
-
-            // Verbal repetition (simple words)
-            { id: 'verbal_1', type: 'verbal', category: 'speaking', difficulty: 1, question: "Say this word out loud:", word: "ELEPHANT 🐘", instruction: "Click 🎤 and say the word" },
-            { id: 'verbal_2', type: 'verbal', category: 'speaking', difficulty: 1, question: "Say this word out loud:", word: "BUTTERFLY 🦋", instruction: "Click 🎤 and say the word" }
-        ]
-    },
-
-    // ============ VISUAL PATTERNS ============
+    // ============ VISUAL PATTERNS (Visual Processing) ============
     visual: {
-        domain: 'Visual Patterns',
+        domain: 'visual',
+        displayName: 'Visual Patterns',
+        clinicalName: 'Visual Processing',
         icon: '👁️',
-        activities: [
-            // Simple patterns (clear, logical)
-            { id: 'pattern_1', type: 'pattern', category: 'patterns', difficulty: 1, question: "What comes next? 🔴 🔵 🔴 🔵 ?", options: ['🔴', '🔵', '🟢', '🟡'], correct: '🔴' },
-            { id: 'pattern_2', type: 'pattern', category: 'patterns', difficulty: 1, question: "What comes next? ⭐ ⭐ 🌙 ⭐ ⭐ 🌙 ?", options: ['⭐', '🌙', '☀️', '🌟'], correct: '⭐' },
-            { id: 'pattern_3', type: 'pattern', category: 'patterns', difficulty: 1, question: "What comes next? 🟢 🔵 🟢 🔵 ?", options: ['🔴', '🔵', '🟢', '🟡'], correct: '🟢' },
-            { id: 'pattern_4', type: 'pattern', category: 'patterns', difficulty: 2, question: "What comes next? 🔺 🔺 🔻 🔺 🔺 🔻 ?", options: ['🔺', '🔻', '🔷', '🔶'], correct: '🔺' },
+        baseline: [
+            { id: 'base_pattern_1', type: 'pattern', difficulty: 1, question: "What comes next? 🔴 🔵 🔴 🔵 ?", options: ['🔴', '🔵', '🟢', '🟡'], correct: '🔴' }
+        ],
+        followUp: [
+            { id: 'fu_pattern_2', type: 'pattern', difficulty: 1, question: "What comes next? ⭐ ⭐ 🌙 ⭐ ⭐ 🌙 ?", options: ['⭐', '🌙', '☀️', '🌟'], correct: '⭐' },
+            { id: 'fu_match_1', type: 'matching', difficulty: 1, question: "Which shape is DIFFERENT?", shapes: ['🔵', '🔵', '🔵', '🟢'], options: ['1st', '2nd', '3rd', '4th'], correct: '4th', correctIndex: 3 },
+            { id: 'fu_match_2', type: 'matching', difficulty: 1, question: "Find the odd one out:", shapes: ['⭐', '⭐', '🌙', '⭐'], options: ['1st', '2nd', '3rd', '4th'], correct: '3rd', correctIndex: 2 }
+        ]
+    },
 
-            // Find the different one (simple visual)
-            { id: 'match_1', type: 'matching', category: 'visual', difficulty: 1, question: "Which shape is DIFFERENT?", shapes: ['🔵', '🔵', '🔵', '🟢'], options: [0, 1, 2, 3], correct: 3, optionLabels: ['1st', '2nd', '3rd', '4th'] },
-            { id: 'match_2', type: 'matching', category: 'visual', difficulty: 1, question: "Find the odd one out:", shapes: ['⭐', '⭐', '🌙', '⭐'], options: [0, 1, 2, 3], correct: 2, optionLabels: ['1st', '2nd', '3rd', '4th'] },
-            { id: 'match_3', type: 'matching', category: 'visual', difficulty: 1, question: "Which one is different?", shapes: ['❤️', '❤️', '❤️', '💚'], options: [0, 1, 2, 3], correct: 3, optionLabels: ['1st', '2nd', '3rd', '4th'] }
+    // ============ LISTENING & SPEAKING (Auditory Processing) ============
+    listening: {
+        domain: 'listening',
+        displayName: 'Listening & Speaking',
+        clinicalName: 'Auditory Processing',
+        icon: '👂',
+        baseline: [
+            { id: 'base_sound_diff', type: 'soundMatch', difficulty: 1, question: "Which word sounds DIFFERENT?", options: ['CAT', 'BAT', 'HAT', 'BALL'], correct: 'BALL' }
+        ],
+        followUp: [
+            { id: 'fu_sound_diff_2', type: 'soundMatch', difficulty: 1, question: "Which word sounds DIFFERENT?", options: ['PEN', 'TEN', 'HEN', 'DOG'], correct: 'DOG' },
+            { id: 'fu_sound_diff_3', type: 'soundMatch', difficulty: 1, question: "Which word sounds DIFFERENT?", options: ['CAKE', 'LAKE', 'CAR', 'MAKE'], correct: 'CAR' },
+            { id: 'fu_verbal_1', type: 'verbal', difficulty: 1, question: "Say this word out loud:", word: "ELEPHANT 🐘", instruction: "Click the microphone and say the word" }
         ]
     }
 }
 
 /**
- * Generate a session with simple, tested activities
- * @param {number} age - Child's age
- * @returns {array} - Ordered list of activities
+ * Generate baseline session (Phase 1: 5-7 questions)
+ * These are the initial screening questions before AI analysis
  */
-export function generateAdaptiveSession(age) {
-    const activities = []
-    const baseDifficulty = age < 8 ? 1 : age < 11 ? 2 : 3
+export function generateBaselineSession() {
+    const questions = []
 
-    Object.entries(SCREENING_ACTIVITIES).forEach(([domain, data]) => {
-        // Get activities appropriate for age
-        const eligible = data.activities.filter(a => a.difficulty <= baseDifficulty)
-
-        // Shuffle and take 2-3 from each domain
-        const shuffled = [...eligible].sort(() => Math.random() - 0.5)
-        const selected = shuffled.slice(0, Math.min(3, shuffled.length))
-
-        activities.push(...selected.map(a => ({
-            ...a,
-            domain,
-            domainName: data.domain,
-            maxTries: MAX_TRIES,
-            currentTries: 0
-        })))
+    // Take baseline questions from each domain
+    Object.values(QUESTION_POOLS).forEach(pool => {
+        pool.baseline.forEach(q => {
+            questions.push({
+                ...q,
+                domain: pool.domain,
+                domainName: pool.displayName,
+                clinicalName: pool.clinicalName,
+                icon: pool.icon,
+                phase: 'baseline',
+                maxTries: MAX_TRIES
+            })
+        })
     })
 
-    // Final shuffle to mix domains
-    return activities.sort(() => Math.random() - 0.5)
+    // Shuffle for variety
+    return shuffleArray(questions)
 }
 
 /**
- * Get follow-up activities (simplified - not used in basic version)
+ * Generate follow-up questions based on AI analysis
+ * @param {object} aiRecommendation - AI analysis result with focusDomains and additionalQuestions
  */
-export function getFollowUpActivities(incorrectActivityIds) {
-    return []
+export function generateFollowUpQuestions(aiRecommendation) {
+    const { focusDomains = [], additionalQuestions = 0 } = aiRecommendation
+    const questions = []
+
+    if (additionalQuestions === 0 || focusDomains.length === 0) {
+        return questions
+    }
+
+    // Prioritize questions from focus domains
+    const questionsPerDomain = Math.ceil(additionalQuestions / focusDomains.length)
+
+    focusDomains.forEach(domainKey => {
+        const pool = QUESTION_POOLS[domainKey]
+        if (!pool) return
+
+        const shuffledFollowUp = shuffleArray([...pool.followUp])
+        const selected = shuffledFollowUp.slice(0, questionsPerDomain)
+
+        selected.forEach(q => {
+            questions.push({
+                ...q,
+                domain: pool.domain,
+                domainName: pool.displayName,
+                clinicalName: pool.clinicalName,
+                icon: pool.icon,
+                phase: 'followup',
+                maxTries: MAX_TRIES
+            })
+        })
+    })
+
+    // Limit to requested number
+    return shuffleArray(questions).slice(0, Math.min(additionalQuestions, MAX_FOLLOWUP_QUESTIONS))
 }
 
 /**
- * Generate context for AI analysis
+ * Analyze baseline responses and generate AI recommendation
+ * This is the mid-session analysis that determines adaptive path
  */
-export function generateScreeningContext(activities, responses) {
-    const domainResults = {}
+export function analyzeBaselineForAI(responses, behavioralData) {
+    const domainStats = {}
 
-    activities.forEach((activity, index) => {
-        const response = responses[index]
-        const domain = activity.domain
-
-        if (!domainResults[domain]) {
-            domainResults[domain] = {
-                name: activity.domainName,
+    // Calculate per-domain statistics
+    responses.forEach(r => {
+        const domain = r.domain || 'unknown'
+        if (!domainStats[domain]) {
+            domainStats[domain] = {
                 total: 0,
                 correct: 0,
-                errors: [],
-                times: []
+                avgTime: 0,
+                times: [],
+                hesitations: 0,
+                retries: 0
             }
         }
 
-        domainResults[domain].total++
-        if (response?.correct) {
-            domainResults[domain].correct++
-        } else if (response) {
-            domainResults[domain].errors.push({
-                question: activity.question,
-                category: activity.category
-            })
-        }
-
-        if (response?.responseTimeMs) {
-            domainResults[domain].times.push(response.responseTimeMs)
-        }
+        domainStats[domain].total++
+        if (r.correct) domainStats[domain].correct++
+        if (r.responseTimeMs) domainStats[domain].times.push(r.responseTimeMs)
+        if (r.hesitated) domainStats[domain].hesitations++
+        if (r.tries > 1) domainStats[domain].retries += r.tries - 1
     })
 
-    // Calculate stats
-    Object.values(domainResults).forEach(domain => {
-        domain.accuracy = domain.total > 0 ? Math.round((domain.correct / domain.total) * 100) : 0
-        domain.avgTime = domain.times.length > 0
-            ? Math.round(domain.times.reduce((a, b) => a + b, 0) / domain.times.length)
+    // Calculate averages
+    Object.values(domainStats).forEach(stats => {
+        stats.accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+        stats.avgTime = stats.times.length > 0
+            ? Math.round(stats.times.reduce((a, b) => a + b, 0) / stats.times.length)
             : 0
     })
 
-    return domainResults
+    // Identify concern areas (accuracy < 70% or high hesitation)
+    const concernDomains = []
+    const watchDomains = []
+
+    Object.entries(domainStats).forEach(([domain, stats]) => {
+        if (stats.accuracy < 50 || stats.retries >= 2) {
+            concernDomains.push(domain)
+        } else if (stats.accuracy < 80 || stats.hesitations > 0 || stats.avgTime > 8000) {
+            watchDomains.push(domain)
+        }
+    })
+
+    // Determine overall risk level
+    let overallRisk = 'NORMAL'
+    let continueSession = false
+    let additionalQuestions = 0
+    let rationale = ''
+
+    if (concernDomains.length >= 2) {
+        overallRisk = 'CONCERN'
+        continueSession = true
+        additionalQuestions = 8
+        rationale = `Multiple domains showing significant patterns: ${concernDomains.join(', ')}. Extended screening recommended.`
+    } else if (concernDomains.length === 1) {
+        overallRisk = 'WATCH'
+        continueSession = true
+        additionalQuestions = 5
+        rationale = `Pattern detected in ${concernDomains[0]}. Additional probing recommended.`
+    } else if (watchDomains.length >= 2) {
+        overallRisk = 'WATCH'
+        continueSession = true
+        additionalQuestions = 4
+        rationale = `Minor variations in ${watchDomains.join(', ')}. Brief follow-up recommended.`
+    } else if (watchDomains.length === 1) {
+        overallRisk = 'NORMAL'
+        continueSession = true
+        additionalQuestions = 2
+        rationale = `Slight hesitation in ${watchDomains[0]}. Quick verification recommended.`
+    } else {
+        overallRisk = 'NORMAL'
+        continueSession = false
+        additionalQuestions = 0
+        rationale = 'All domains within normal range. Session complete.'
+    }
+
+    // Include behavioral data in analysis
+    if (behavioralData) {
+        const { stressRatio = 0, hesitationCount = 0 } = behavioralData
+        if (stressRatio > 0.3) {
+            overallRisk = overallRisk === 'NORMAL' ? 'WATCH' : overallRisk
+            additionalQuestions = Math.max(additionalQuestions, 3)
+            continueSession = true
+            rationale += ' Elevated stress indicators observed.'
+        }
+    }
+
+    return {
+        overallRisk,
+        continueSession,
+        focusDomains: [...concernDomains, ...watchDomains],
+        additionalQuestions: Math.min(additionalQuestions, MAX_FOLLOWUP_QUESTIONS),
+        rationale,
+        domainStats,
+        timestamp: new Date().toISOString()
+    }
+}
+
+/**
+ * Generate clinical screening context for final AI analysis
+ */
+export function generateClinicalContext(allResponses, aiMidSessionAnalysis, behavioralData) {
+    const domainResults = {}
+
+    // Compile all responses by domain
+    allResponses.forEach(r => {
+        const domain = r.domain || 'unknown'
+        if (!domainResults[domain]) {
+            const pool = QUESTION_POOLS[domain]
+            domainResults[domain] = {
+                displayName: pool?.displayName || domain,
+                clinicalName: pool?.clinicalName || domain,
+                icon: pool?.icon || '📋',
+                baselineResponses: [],
+                followUpResponses: [],
+                totalQuestions: 0,
+                totalCorrect: 0,
+                avgResponseTime: 0,
+                times: [],
+                patterns: []
+            }
+        }
+
+        if (r.phase === 'baseline') {
+            domainResults[domain].baselineResponses.push(r)
+        } else {
+            domainResults[domain].followUpResponses.push(r)
+        }
+
+        domainResults[domain].totalQuestions++
+        if (r.correct) domainResults[domain].totalCorrect++
+        if (r.responseTimeMs) domainResults[domain].times.push(r.responseTimeMs)
+    })
+
+    // Calculate statistics and identify patterns
+    Object.entries(domainResults).forEach(([domain, data]) => {
+        data.accuracy = data.totalQuestions > 0
+            ? Math.round((data.totalCorrect / data.totalQuestions) * 100)
+            : 0
+        data.avgResponseTime = data.times.length > 0
+            ? Math.round(data.times.reduce((a, b) => a + b, 0) / data.times.length)
+            : 0
+
+        // Identify specific patterns
+        if (domain === 'reading') {
+            const letterErrors = allResponses.filter(r =>
+                r.domain === 'reading' && r.type === 'letter' && !r.correct
+            )
+            if (letterErrors.length > 0) {
+                data.patterns.push('Letter reversal difficulty observed (b/d/p/q confusion)')
+            }
+            const rhymeErrors = allResponses.filter(r =>
+                r.domain === 'reading' && r.type === 'rhyming' && !r.correct
+            )
+            if (rhymeErrors.length > 0) {
+                data.patterns.push('Phonological awareness difficulty (rhyming)')
+            }
+        }
+
+        if (domain === 'math') {
+            const countingErrors = allResponses.filter(r =>
+                r.domain === 'math' && r.type === 'counting' && !r.correct
+            )
+            if (countingErrors.length > 0) {
+                data.patterns.push('Counting accuracy difficulty')
+            }
+            const mathErrors = allResponses.filter(r =>
+                r.domain === 'math' && r.type === 'math' && !r.correct
+            )
+            if (mathErrors.length > 0) {
+                data.patterns.push('Basic arithmetic difficulty')
+            }
+        }
+
+        if (domain === 'attention') {
+            const memoryErrors = allResponses.filter(r =>
+                r.domain === 'attention' && r.type === 'workingMemory' && !r.correct
+            )
+            if (memoryErrors.length > 0) {
+                data.patterns.push('Working memory difficulty (digit span)')
+            }
+            if (data.avgResponseTime > 10000) {
+                data.patterns.push('Extended processing time observed')
+            }
+        }
+
+        // Calculate confidence level
+        data.confidence = calculateDomainConfidence(data)
+        data.status = determineStatus(data.accuracy, data.patterns.length)
+    })
+
+    return {
+        domainResults,
+        midSessionAnalysis: aiMidSessionAnalysis,
+        behavioralSummary: behavioralData,
+        sessionType: aiMidSessionAnalysis?.continueSession ? 'ADAPTIVE' : 'BASELINE_ONLY',
+        totalQuestions: allResponses.length,
+        overallAccuracy: allResponses.length > 0
+            ? Math.round((allResponses.filter(r => r.correct).length / allResponses.length) * 100)
+            : 0
+    }
+}
+
+// ============ HELPER FUNCTIONS ============
+
+function shuffleArray(array) {
+    const shuffled = [...array]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
+}
+
+function calculateDomainConfidence(domainData) {
+    const { totalQuestions, accuracy, patterns } = domainData
+
+    // More questions = higher confidence
+    let confidence = Math.min(totalQuestions * 15, 60)
+
+    // Clear results (very high or very low accuracy) = higher confidence
+    if (accuracy >= 90 || accuracy <= 30) {
+        confidence += 25
+    } else if (accuracy >= 80 || accuracy <= 50) {
+        confidence += 15
+    }
+
+    // Patterns identified = higher confidence in assessment
+    confidence += patterns.length * 5
+
+    return Math.min(confidence, 95)
+}
+
+function determineStatus(accuracy, patternCount) {
+    if (accuracy >= 85 && patternCount === 0) return 'TYPICAL'
+    if (accuracy >= 70 && patternCount <= 1) return 'WATCH'
+    return 'ELEVATED'
 }
