@@ -406,7 +406,7 @@ function ChildActivity() {
                         signalsRef.current.faceData.push({
                             timestamp: analysis.timestamp,
                             present: true,
-                            activity: ACTIVITIES[currentIndex]?.type,
+                            activity: activities[currentIndex]?.type,
                             emotion: analysis.emotions.dominant,
                             emotionConfidence: analysis.emotions.confidence,
                             allEmotions: analysis.emotions.all,
@@ -425,7 +425,7 @@ function ChildActivity() {
                                 emotion: analysis.emotions.dominant,
                                 confidence: analysis.emotions.confidence,
                                 timestamp: Date.now(),
-                                activity: ACTIVITIES[currentIndex]?.id
+                                activity: activities[currentIndex]?.id
                             })
                         }
 
@@ -435,7 +435,7 @@ function ChildActivity() {
                                 type: 'looking_away',
                                 gazeOffset: { x: analysis.gaze.offsetX, y: analysis.gaze.offsetY },
                                 timestamp: Date.now(),
-                                activity: ACTIVITIES[currentIndex]?.id
+                                activity: activities[currentIndex]?.id
                             })
                         }
                     } else {
@@ -443,7 +443,7 @@ function ChildActivity() {
                         signalsRef.current.faceData.push({
                             timestamp: Date.now(),
                             present: false,
-                            activity: ACTIVITIES[currentIndex]?.type
+                            activity: activities[currentIndex]?.type
                         })
                     }
                 }
@@ -460,7 +460,7 @@ function ChildActivity() {
                 signalsRef.current.faceData.push({
                     timestamp: Date.now(),
                     present: true,
-                    activity: ACTIVITIES[currentIndex]?.type
+                    activity: activities[currentIndex]?.type
                 })
             }
         }, 3000)
@@ -480,7 +480,7 @@ function ChildActivity() {
                     found.push({
                         word: filler,
                         timestamp: Date.now(),
-                        activity: ACTIVITIES[currentIndex]?.id
+                        activity: activities[currentIndex]?.id
                     })
                 })
             }
@@ -497,7 +497,7 @@ function ChildActivity() {
                 found.push({
                     pattern: match,
                     timestamp: Date.now(),
-                    activity: ACTIVITIES[currentIndex]?.id
+                    activity: activities[currentIndex]?.id
                 })
             })
         }
@@ -509,7 +509,7 @@ function ChildActivity() {
                     pattern: match,
                     type: 'syllable_repeat',
                     timestamp: Date.now(),
-                    activity: ACTIVITIES[currentIndex]?.id
+                    activity: activities[currentIndex]?.id
                 })
             })
         }
@@ -546,7 +546,7 @@ function ChildActivity() {
                 speechRef.pauses.push({
                     durationMs: pauseDuration,
                     timestamp: now,
-                    activity: ACTIVITIES[currentIndex]?.id,
+                    activity: activities[currentIndex]?.id,
                     beforeText: transcript.substring(0, 30)
                 })
                 signalsRef.current.speechAnalysis.pauseDetails.push({
@@ -622,14 +622,14 @@ function ChildActivity() {
                 wordCount,
                 fillersFound: fillers.length,
                 stammersFound: stammers.length,
-                activity: ACTIVITIES[currentIndex]?.id
+                activity: activities[currentIndex]?.id
             })
 
             signalsRef.current.voiceData.push({
                 timestamp: now,
                 transcript,
                 confidence,
-                activity: ACTIVITIES[currentIndex]?.type,
+                activity: activities[currentIndex]?.type,
                 analysis: {
                     wordCount,
                     fillers: fillers.length,
@@ -805,7 +805,7 @@ function ChildActivity() {
                         signalsRef.current.stressIndicators.push({
                             type: 'rapid_mouse',
                             timestamp: now,
-                            activity: ACTIVITIES[currentIndex]?.id
+                            activity: activities[currentIndex]?.id
                         })
                         rapidMoves = 0
                     }
@@ -817,7 +817,7 @@ function ChildActivity() {
             if (now - idleStart > 2000 && distance < 10) {
                 signalsRef.current.hesitationEvents.push({
                     timestamp: new Date().toISOString(),
-                    activityId: ACTIVITIES[currentIndex]?.id,
+                    activityId: activities[currentIndex]?.id,
                     durationMs: now - idleStart
                 })
                 idleStart = now

@@ -504,9 +504,9 @@
 /* Recording controls */
 .recording-controls {
     position: fixed;
-    top: 8px;
-    right: 200px;
-    z-index: 100;
+    top: 40px;
+    right: 8px;
+    z-index: 99;
 }
 
 .record-toggle {
