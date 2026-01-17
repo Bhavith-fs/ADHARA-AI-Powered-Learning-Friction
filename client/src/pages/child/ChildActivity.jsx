@@ -234,6 +234,66 @@ function VisualMemoryActivity({ activity, onComplete }) {
     )
 }
 
+/**
+ * Working Memory Activity - Show numbers briefly then hide
+ */
+function WorkingMemoryActivity({ activity, onComplete }) {
+    const [phase, setPhase] = useState('show') // 'show' or 'answer'
+    const [timeLeft, setTimeLeft] = useState(2)
+
+    useEffect(() => {
+        // Countdown timer
+        const countdownInterval = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(countdownInterval)
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+
+        // Hide after 2 seconds
+        const timer = setTimeout(() => {
+            setPhase('answer')
+        }, 2000)
+
+        return () => {
+            clearTimeout(timer)
+            clearInterval(countdownInterval)
+        }
+    }, [])
+
+    if (phase === 'show') {
+        return (
+            <div className="working-memory-show">
+                <p className="memory-timer">Remember these! ({timeLeft}s)</p>
+                <div className="memory-sequence large">
+                    {activity.sequence.map((num, i) => (
+                        <span key={i} className="memory-item pop-in" style={{ animationDelay: `${i * 0.2}s` }}>{num}</span>
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="working-memory-answer">
+            <p className="memory-question">What was the order?</p>
+            {activity.type === 'workingMemoryBackward' && (
+                <p className="memory-instruction">⬅️ Say them BACKWARDS!</p>
+            )}
+            <div className="options-grid">
+                {activity.options.map((opt, i) => (
+                    <button key={i} className="option-button sequence-option" onClick={() => onComplete(opt)}>
+                        {typeof opt === 'string' ? opt : opt.join(' → ')}
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 function ChildActivity() {
     const navigate = useNavigate()
     const canvasRef = useRef(null)
@@ -1481,25 +1541,13 @@ function ChildActivity() {
                             </div>
                         )}
 
-                        {/* WORKING MEMORY - Digit span */}
+                        {/* WORKING MEMORY - Digit span with 2s show then hide */}
                         {(currentActivity.type === 'workingMemory' || currentActivity.type === 'workingMemoryBackward') && (
-                            <>
-                                <div className="memory-sequence">
-                                    {currentActivity.sequence.map((num, i) => (
-                                        <span key={i} className="memory-item">{num}</span>
-                                    ))}
-                                </div>
-                                {currentActivity.type === 'workingMemoryBackward' && (
-                                    <p className="memory-instruction">⬅️ Say them BACKWARDS!</p>
-                                )}
-                                <div className="options-grid">
-                                    {currentActivity.options.map((opt, i) => (
-                                        <button key={i} className="option-button sequence-option" onClick={() => handleAnswer(opt)} disabled={showFeedback}>
-                                            {typeof opt === 'string' ? opt : opt.join(' → ')}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
+                            <WorkingMemoryActivity
+                                key={currentIndex}
+                                activity={currentActivity}
+                                onComplete={(selectedOption) => handleAnswer(selectedOption)}
+                            />
                         )}
 
                         {/* IMPULSE CONTROL - Go/No-Go */}
