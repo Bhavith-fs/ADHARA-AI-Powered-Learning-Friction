@@ -180,10 +180,10 @@ function SustainedAttentionActivity({ activity, onComplete }) {
  */
 function VisualMemoryActivity({ activity, onComplete }) {
     const [phase, setPhase] = useState('show') // 'show' or 'recall'
-    const [timeLeft, setTimeLeft] = useState(Math.ceil((activity.hideAfter || 3000) / 1000))
+    const [timeLeft, setTimeLeft] = useState(Math.ceil((activity.hideAfter || 5000) / 1000))
 
     useEffect(() => {
-        const hideAfter = activity.hideAfter || 3000
+        const hideAfter = activity.hideAfter || 5000
 
         // Countdown
         const countdownInterval = setInterval(() => {
@@ -1357,6 +1357,7 @@ function ChildActivity() {
                                 <div className="stroop-display" style={{ color: currentActivity.displayColor }}>
                                     {currentActivity.word}
                                 </div>
+                                <p className="stroop-instruction">👆 What COLOR is this word? (Not what it says!)</p>
                                 <div className="options-grid">
                                     {currentActivity.options.map((opt, i) => (
                                         <button key={i} className="option-button" onClick={() => handleAnswer(opt)} disabled={showFeedback}>{opt}</button>

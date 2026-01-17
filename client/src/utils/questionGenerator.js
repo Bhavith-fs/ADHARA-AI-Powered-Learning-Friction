@@ -103,6 +103,7 @@ export const QUESTION_POOLS = {
         clinicalName: 'Auditory Processing',
         icon: '👂',
         baseline: [
+            { id: 'base_voice_check', type: 'verbal', difficulty: 1, question: "Say this word out loud:", word: "HELLO 👋", instruction: "Click the microphone and say 'HELLO'" },
             { id: 'base_sound_diff', type: 'soundMatch', difficulty: 1, question: "Which word sounds DIFFERENT?", options: ['CAT', 'BAT', 'HAT', 'BALL'], correct: 'BALL' }
         ],
         followUp: [
@@ -116,14 +117,16 @@ export const QUESTION_POOLS = {
 /**
  * Generate baseline session (Phase 1: 5-7 questions)
  * These are the initial screening questions before AI analysis
+ * Voice check is always placed at position 2
  */
 export function generateBaselineSession() {
     const questions = []
+    let voiceQuestion = null
 
     // Take baseline questions from each domain
     Object.values(QUESTION_POOLS).forEach(pool => {
         pool.baseline.forEach(q => {
-            questions.push({
+            const question = {
                 ...q,
                 domain: pool.domain,
                 domainName: pool.displayName,
@@ -131,12 +134,26 @@ export function generateBaselineSession() {
                 icon: pool.icon,
                 phase: 'baseline',
                 maxTries: MAX_TRIES
-            })
+            }
+
+            // Separate voice check question
+            if (q.type === 'verbal') {
+                voiceQuestion = question
+            } else {
+                questions.push(question)
+            }
         })
     })
 
-    // Shuffle for variety
-    return shuffleArray(questions)
+    // Shuffle non-voice questions
+    const shuffled = shuffleArray(questions)
+
+    // Insert voice check at position 2 (index 1) if available
+    if (voiceQuestion) {
+        shuffled.splice(1, 0, voiceQuestion)
+    }
+
+    return shuffled
 }
 
 /**
