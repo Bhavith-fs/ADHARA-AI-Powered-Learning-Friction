@@ -168,17 +168,6 @@ ADHARA/
 
 ---
 
-## Implementation
+## 📄 License
 
-1. **Environment Setup**
-   ```bash
-   git clone https://github.com/JithuMon10/ADHARA-AI-Powered-Learning-Friction.git
-   npm install
-   ```
-
-2. **Execution**
-   ```bash
-   npm run dev
-   ```
-
-<div align="center"> <sub>ADHARA © 2026 | Pioneering Early Intervention</sub> </div>
+This project is open-source and available under the MIT License.
